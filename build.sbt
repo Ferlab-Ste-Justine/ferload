@@ -10,7 +10,7 @@ scalaVersion := "2.13.3"
 libraryDependencies += guice
 libraryDependencies += "com.amazonaws" % "aws-java-sdk-bom" % "1.11.880"
 libraryDependencies += "com.amazonaws" % "aws-java-sdk-s3" % "1.11.880"
-
+libraryDependencies += "org.mockito" % "mockito-core" % "3.8.0" % Test
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test
 
 // Adds additional packages into Twirl

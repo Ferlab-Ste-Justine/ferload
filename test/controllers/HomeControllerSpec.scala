@@ -1,9 +1,15 @@
 package controllers
 
+import org.scalatestplus.mockito.MockitoSugar
+import org.mockito.Mockito._
 import org.scalatestplus.play._
 import org.scalatestplus.play.guice._
 import play.api.test._
 import play.api.test.Helpers._
+import services.S3Service
+
+import java.net.URL
+
 
 /**
  * Add your spec here.
@@ -11,17 +17,19 @@ import play.api.test.Helpers._
  *
  * For more information, see https://www.playframework.com/documentation/latest/ScalaTestingWithScalaTest
  */
-class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting {
-
+class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting with MockitoSugar {
+  val stubS3Service = mock[S3Service]
+  when(stubS3Service.presignedUrl("clin-repository", "file1.cram")).thenReturn(new URL("http://myobjectstore.ca/file1.cram"))
+  when(stubS3Service.presignedUrl("clin-repository", "file1.cram.crai")).thenReturn(new URL("http://myobjectstore.ca/file1.cram.crai"))
   "HomeController GET" should {
 
     "render the index page from a new instance of controller" in {
-      val controller = new HomeController(stubControllerComponents())
+      val controller = new HomeController(stubControllerComponents(),stubS3Service)
       val home = controller.index().apply(FakeRequest(GET, "/"))
 
       status(home) mustBe OK
       contentType(home) mustBe Some("text/html")
-      contentAsString(home) must include ("Welcome to Play")
+      contentAsString(home) must include ("Visualizing file")
     }
 
     "render the index page from the application" in {
@@ -30,7 +38,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       status(home) mustBe OK
       contentType(home) mustBe Some("text/html")
-      contentAsString(home) must include ("Welcome to Play")
+      contentAsString(home) must include ("Visualizing file")
     }
 
     "render the index page from the router" in {
@@ -39,7 +47,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       status(home) mustBe OK
       contentType(home) mustBe Some("text/html")
-      contentAsString(home) must include ("Welcome to Play")
+      contentAsString(home) must include ("Visualizing file")
     }
   }
 }
