@@ -1,0 +1,69 @@
+@(cram: String, crai: String)
+
+    @main(s"Visualizing file") {
+        <h1>CRAM alignments</h1>
+
+        <a href="/file1.cram">Dowload CRAM</a>
+        <a href="/file1.cram.crai">Dowload CRAI</a>
+
+        <div id="igvDiv" style="padding-top: 10px;
+            padding-bottom: 10px;
+            border: 1px solid lightgray"></div>
+        <script type="text/javascript">
+                document.addEventListener("DOMContentLoaded", function () {
+
+                    const options =
+                            {
+                                // Example of fully specifying a reference .  We could alternatively use  "genome: 'hg19'"
+                                reference:
+                                        {
+                                            id: "hg19",
+                                            fastaURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/1kg_v37/human_g1k_v37_decoy.fasta",
+                                            cytobandURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/b37/b37_cytoband.txt"
+                                        },
+                                locus: "8:128,750,948-128,751,025",
+                                tracks:
+                                        [
+                                            {
+                                                type: 'alignment',
+                                                format: 'cram',
+                                                url: axios.get("/file1.cram/presigned").then(response =>
+                                                        response.data.url
+                                                ),
+                                                indexURL: axios.get("/file1.cram.crai/presigned").then(response =>
+                                                        response.data.url
+                                                ),
+                                                name: 'HG00096',
+                                                sort: {
+                                                    chr: "chr8",
+                                                    position: 128750986,
+                                                    option: "BASE",
+                                                    direction: "ASC"
+                                                },
+                                                height: 600
+                                            },
+                                            {
+                                                name: "Genes",
+                                                type: "annotation",
+                                                format: "bed",
+                                                url: "https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/genes/refGene.hg19.bed.gz",
+                                                indexURL: "https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/genes/refGene.hg19.bed.gz.tbi",
+                                                order: Number.MAX_VALUE,
+                                                visibilityWindow: 300000000,
+                                                displayMode: "EXPANDED"
+                                            }
+                                        ]
+
+                            };
+
+                    var igvDiv = document.getElementById("igvDiv");
+
+                    igv.createBrowser(igvDiv, options)
+                            .then(function (browser) {
+                                console.log("Created IGV browser");
+                            })
+                })
+        </script>
+
+
+    }
