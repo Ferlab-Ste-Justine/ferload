@@ -20,12 +20,9 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents, v
    * will be called when the application receives a `GET` request with
    * a path of `/`.
    */
-  def index() = Action { implicit request: Request[AnyContent] =>
+  def igv(id:String) = Action { implicit request: Request[AnyContent] =>
 
-    val cram = s3.presignedUrl("clin-repository", "file1.cram")
-    val crai = s3.presignedUrl("clin-repository", "file1.cram.crai")
-
-    Ok(views.html.index(cram.toString, crai.toString))
+    Ok(views.html.index(s"$id.cram", s"$id.cram.crai"))
 
   }
 

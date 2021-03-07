@@ -3,8 +3,8 @@
     @main(s"Visualizing file") {
         <h1>CRAM alignments</h1>
 
-        <a href="/file1.cram">Dowload CRAM</a>
-        <a href="/file1.cram.crai">Dowload CRAI</a>
+        <a href="/@cram">Dowload CRAM</a>
+        <a href="/@crai">Dowload CRAI</a>
 
         <div id="igvDiv" style="padding-top: 10px;
             padding-bottom: 10px;
@@ -27,10 +27,10 @@
                                             {
                                                 type: 'alignment',
                                                 format: 'cram',
-                                                url: axios.get("/file1.cram/presigned").then(response =>
+                                                url: axios.get("/@cram/presigned").then(response =>
                                                         response.data.url
                                                 ),
-                                                indexURL: axios.get("/file1.cram.crai/presigned").then(response =>
+                                                indexURL: axios.get("/@crai/presigned").then(response =>
                                                         response.data.url
                                                 ),
                                                 name: 'HG00096',
