@@ -22,8 +22,6 @@
                 keycloak.init({
                     onLoad: 'login-required',
                 }).then((authenticated => {
-                    console.log('authenticated', keycloak.token)
-
 
                     function getPresignedUrl(file) {
                         return axios.get(`/${file}/presigned`, {headers: {"Authorization": `Bearer ${keycloak.token}`}})
@@ -32,6 +30,7 @@
                                 );
                     }
 
+                    //Manage download link
                     $('.dl')
                             .css('visibility', 'visible')
                             .on('click', function () {
@@ -44,7 +43,9 @@
                                             link.click();
                                         });
                             });
-                    const options =
+
+                    //Rendering IGV borwser
+                    const igvOptions =
                             {
                                 // Example of fully specifying a reference .  We could alternatively use  "genome: 'hg19'"
                                 reference:
@@ -84,7 +85,7 @@
 
                             };
                     var igvDiv = document.getElementById("igvDiv");
-                    igv.createBrowser(igvDiv, options)
+                    igv.createBrowser(igvDiv, igvOptions)
                             .then(function (browser) {
                                 console.log("Created IGV browser");
                             });
