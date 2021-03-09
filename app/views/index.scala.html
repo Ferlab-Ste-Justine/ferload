@@ -3,9 +3,8 @@
 @main(s"Visualizing file") {
     <h1>CRAM alignments</h1>
 
-    <a href="/@cram">Dowload CRAM</a>
-    <a href="/@crai">Dowload CRAI</a>
-
+    <a href="/@cram" class="dl" style="visibility: hidden">Dowload CRAM</a>
+    <a href="/@crai" class="dl" style="visibility: hidden">Dowload CRAI</a>
     <div id="igvDiv" style="padding-top: 10px;
         padding-bottom: 10px;
         border: 1px solid lightgray"></div>
@@ -25,13 +24,26 @@
                 }).then((authenticated => {
                     console.log('authenticated', keycloak.token)
 
+
                     function getPresignedUrl(file) {
-                        return axios.get(`/${file}/presigned`, {headers: {"Authorization": `Bearer ${ keycloak.token}`}})
+                        return axios.get(`/${file}/presigned`, {headers: {"Authorization": `Bearer ${keycloak.token}`}})
                                 .then(response =>
                                         response.data.url
                                 );
                     }
 
+                    $('.dl')
+                            .css('visibility', 'visible')
+                            .on('click', function () {
+                                getPresignedUrl($(this).href)
+                                        .then((url) => {
+                                            const link = document.createElement('a');
+                                            link.href = url;
+                                            link.setAttribute('download', 'file.cram'); //or any other extension
+                                            document.body.appendChild(link);
+                                            link.click();
+                                        });
+                            });
                     const options =
                             {
                                 // Example of fully specifying a reference .  We could alternatively use  "genome: 'hg19'"
