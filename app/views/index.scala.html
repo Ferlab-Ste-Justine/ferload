@@ -1,16 +1,36 @@
 @(cram: String, crai: String)
 
-    @main(s"Visualizing file") {
-        <h1>CRAM alignments</h1>
+@main(s"Visualizing file") {
+    <h1>CRAM alignments</h1>
 
-        <a href="/@cram">Dowload CRAM</a>
-        <a href="/@crai">Dowload CRAI</a>
+    <a href="/@cram">Dowload CRAM</a>
+    <a href="/@crai">Dowload CRAI</a>
 
-        <div id="igvDiv" style="padding-top: 10px;
-            padding-bottom: 10px;
-            border: 1px solid lightgray"></div>
-        <script type="text/javascript">
-                document.addEventListener("DOMContentLoaded", function () {
+    <div id="igvDiv" style="padding-top: 10px;
+        padding-bottom: 10px;
+        border: 1px solid lightgray"></div>
+    <script type="text/javascript">
+
+
+            document.addEventListener("DOMContentLoaded", function () {
+
+                var keycloak = new Keycloak({
+                    "realm": "clin",
+                    "url": "https://auth.qa.cqdg.ferlab.bio/auth/",
+                    "clientId": "clin-client"
+                });
+
+                keycloak.init({
+                    onLoad: 'login-required',
+                }).then((authenticated => {
+                    console.log('authenticated', keycloak.token)
+
+                    function getPresignedUrl(file) {
+                        return axios.get(`/${file}/presigned`, {headers: {"Authorization": `Bearer ${ keycloak.token}`}})
+                                .then(response =>
+                                        response.data.url
+                                );
+                    }
 
                     const options =
                             {
@@ -27,12 +47,8 @@
                                             {
                                                 type: 'alignment',
                                                 format: 'cram',
-                                                url: axios.get("/@cram/presigned").then(response =>
-                                                        response.data.url
-                                                ),
-                                                indexURL: axios.get("/@crai/presigned").then(response =>
-                                                        response.data.url
-                                                ),
+                                                url: getPresignedUrl("@cram"),
+                                                indexURL: getPresignedUrl("@crai"),
                                                 name: 'HG00096',
                                                 sort: {
                                                     chr: "chr8",
@@ -55,15 +71,16 @@
                                         ]
 
                             };
-
                     var igvDiv = document.getElementById("igvDiv");
-
                     igv.createBrowser(igvDiv, options)
                             .then(function (browser) {
                                 console.log("Created IGV browser");
-                            })
-                })
-        </script>
+                            });
+                }));
 
 
-    }
+            })
+    </script>
+
+
+}

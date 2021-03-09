@@ -1,8 +1,10 @@
 package controllers
 
+import auth.{AuthAction, UserRequest}
+import play.api.{Configuration, Logging}
 import play.api.libs.json.Json
 import play.api.mvc._
-import services.S3Service
+import services.aws.S3Service
 
 import javax.inject._
 
@@ -11,7 +13,7 @@ import javax.inject._
  * application's home page.
  */
 @Singleton
-class HomeController @Inject()(val controllerComponents: ControllerComponents, val s3: S3Service) extends BaseController {
+class HomeController @Inject()(val controllerComponents: ControllerComponents, s3: S3Service, authAction: AuthAction, config: Configuration) extends BaseController with Logging {
 
   /**
    * Create an Action to render an HTML page.
@@ -20,22 +22,23 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents, v
    * will be called when the application receives a `GET` request with
    * a path of `/`.
    */
-  def igv(id:String) = Action { implicit request: Request[AnyContent] =>
+  def igv(id: String): Action[AnyContent] = Action { implicit request: Request[AnyContent] =>
 
     Ok(views.html.index(s"$id.cram", s"$id.cram.crai"))
 
   }
 
+  private val bucket = config.get[String]("aws.bucket")
 
-  def download(file: String) = Action { implicit request: Request[AnyContent] =>
-    val url = s3.presignedUrl("clin-repository", file)
+  def download(file: String): Action[AnyContent] = Action { implicit request: Request[AnyContent] =>
+    val url = s3.presignedUrl(bucket, file)
     TemporaryRedirect(url.toString)
   }
 
-  def presignedUrl(file: String) = Action { implicit request: Request[AnyContent] =>
-    val url = s3.presignedUrl("clin-repository", file)
+  def presignedUrl(file: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
+    logger.info(s"Token ${request.token}")
+    val url = s3.presignedUrl(bucket, file)
     Ok(Json.toJson(Map("url" -> url.toString)))
-
   }
 
 }
