@@ -1,4 +1,4 @@
-name := """clin-download"""
+name := """ferload"""
 organization := "bio.ferlab"
 
 version := "1.0-SNAPSHOT"
