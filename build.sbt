@@ -18,6 +18,7 @@ libraryDependencies += "org.keycloak" % "keycloak-core" % keycloakVersion
 libraryDependencies += "org.mockito" % "mockito-core" % "3.8.0" % Test
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test
 
+packageName in Universal := name.value
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "bio.ferlab.controllers._"
 
