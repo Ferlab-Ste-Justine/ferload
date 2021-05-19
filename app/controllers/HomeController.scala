@@ -31,9 +31,14 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents, s
   private val bucket = config.get[String]("aws.bucket")
 
   def presignedUrl(file: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
-    logger.info(s"Token ${request.token}")
     val url = s3.presignedUrl(bucket, file)
     Ok(Json.toJson(Map("url" -> url.toString)))
+  }
+
+  def download(file: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
+    val url = s3.presignedUrl(bucket, file)
+
+    Found(url.toString)
   }
 
 }
