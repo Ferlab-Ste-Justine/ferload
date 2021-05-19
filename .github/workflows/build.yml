@@ -1,6 +1,8 @@
-name: Build
+name: Test and build
 on:
-  push:
+  pull_request:
+    branches:
+      - main
 
 jobs:
   test:
@@ -18,5 +20,5 @@ jobs:
         uses: mikepenz/action-junit-report@v2
         with:
           report_paths: 'target/test-reports/TEST-*.xml'
-      - name: Assembly
+      - name: Build
         run: sbt -v -Dfile.encoding=UTF-8 +universal:packageZipTarball
