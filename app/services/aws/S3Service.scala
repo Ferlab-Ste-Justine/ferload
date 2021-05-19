@@ -26,7 +26,7 @@ class S3Service @Inject()(config: Configuration) {
 
   def presignedUrl(bucket: String, prefix: String, file: String, expiration: Duration = 1.hour, method: HttpMethod = HttpMethod.GET): URL = {
     val expirationDate = new Date(System.currentTimeMillis() + expiration.toMillis)
-    val key = if (prefix.isEmpty) file else s"$prefix/$key"
+    val key = if (prefix.isEmpty) file else s"$prefix/$file"
     val url = s3.generatePresignedUrl(bucket, s"$prefix/$key", expirationDate, HttpMethod.GET)
     url
   }
