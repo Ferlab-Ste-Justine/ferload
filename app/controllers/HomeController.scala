@@ -31,15 +31,24 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents, s
   private val bucket = config.get[String]("aws.bucket")
   private val prefix = config.get[String]("aws.prefix")
 
-  def presignedUrl(file: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
+  def get(file: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
     val url = s3.presignedUrl(bucket, prefix, file)
-    Ok(Json.toJson(Map("url" -> url.toString)))
+    request.getQueryString("format") match {
+      case Some("json") =>
+        Ok(Json.toJson(Map("url" -> url.toString)))
+      case _ =>
+        Found(url.toString)
+    }
   }
 
-  def download(file: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
-    val url = s3.presignedUrl(bucket, prefix, file)
+  def cp(file: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
+    s3.copy(bucket, prefix, file)
+    Ok("done")
+  }
 
-    Found(url.toString)
+  def head(file: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
+    s3.head(bucket, prefix, file)
+    Ok("done")
   }
 
 }

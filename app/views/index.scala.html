@@ -24,7 +24,7 @@
                 }).then((authenticated => {
 
                     function getPresignedUrl(file) {
-                        return axios.get(`/${file}/presigned`, {headers: {"Authorization": `Bearer ${keycloak.token}`}})
+                        return axios.get(`/${file}?format=json`, {headers: {"Authorization": `Bearer ${keycloak.token}`}})
                                 .then(response =>
                                         response.data.url
                                 );

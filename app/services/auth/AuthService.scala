@@ -18,11 +18,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class AuthService @Inject()(ws: WSClient, config: Configuration, cache: AsyncCacheApi)(implicit ec: ExecutionContext) {
 
-  private def audience = config.get[String]("auth.audience")
+  private val audience = config.get[String]("auth.audience")
 
-  private def issuer = config.get[String]("auth.issuer")
+  private val issuer = config.get[String]("auth.issuer")
 
-  private def jwksUri = config.get[String]("auth.jwks_uri")
+  private val jwksUri = config.get[String]("auth.jwks_uri")
 
   def verifyToken(token: String): Future[AccessToken] = {
     val tokenVerifier = TokenVerifier.create(token, classOf[AccessToken])
@@ -31,11 +31,12 @@ class AuthService @Inject()(ws: WSClient, config: Configuration, cache: AsyncCac
     } yield publicKey match {
       case Some(pk) =>
         val accessToken = tokenVerifier.publicKey(pk)
-          .verify()
-          .issuedFor(issuer)
+          .withChecks(TokenVerifier.IS_ACTIVE, new TokenVerifier.RealmUrlCheck(issuer))
           .audience(audience)
+          .verify()
           .getToken
         accessToken
+
       case None =>
         throw new VerificationException(s"sPublic key ${tokenVerifier.getHeader.getKeyId} not found")
     }
@@ -61,4 +62,3 @@ class AuthService @Inject()(ws: WSClient, config: Configuration, cache: AsyncCac
   }
 
 }
-
