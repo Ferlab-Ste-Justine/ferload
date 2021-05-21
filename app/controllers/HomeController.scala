@@ -41,14 +41,4 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents, s
     }
   }
 
-  def cp(file: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
-    s3.copy(bucket, prefix, file)
-    Ok("done")
-  }
-
-  def head(file: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
-    s3.head(bucket, prefix, file)
-    Ok("done")
-  }
-
 }
