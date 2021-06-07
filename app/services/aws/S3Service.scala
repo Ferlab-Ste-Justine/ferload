@@ -19,7 +19,7 @@ class S3Service @Inject()(config: Configuration) {
     .checksumValidationEnabled(false)
     .build()
   val staticCredentialsProvider: StaticCredentialsProvider = StaticCredentialsProvider.create(
-    AwsBasicCredentials.create("a99965da-90fe-264f-e7dd-8109bd57823d", "f7c99b73-66d1-da77-982f-0248975105fe")
+    AwsBasicCredentials.create(config.get[String]("aws.access_key"), config.get[String]("aws.secret_key"))
   )
   private val endpoint = URI.create(config.get[String]("aws.endpoint"))
 
