@@ -11,6 +11,18 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: "adopt@1.11"
+      - name: Test
+        run: sbt -v -Dfile.encoding=UTF-8 +test
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v2
+        with:
+          report_paths: 'target/test-reports/TEST-*.xml'
+      - name: Build
+        run: sbt -v -Dfile.encoding=UTF-8 +universal:packageZipTarball
       - name: Push the image on the registry
         uses: Ferlab-Ste-Justine/action-push-image@master
         with:
