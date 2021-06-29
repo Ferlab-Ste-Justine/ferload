@@ -35,14 +35,13 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
 
   def downloadLinks(): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
     val token = request.headers.get(HeaderNames.AUTHORIZATION).get.replace("Bearer ", "")
-    val requestedFiles = request.body.asText.get.split("\n")
-    val okPermsFiles = perms.checkPermissions(token, requestedFiles)
-    val missingPermsFiles = requestedFiles.filter(!okPermsFiles.contains(_))
+    val requestedFiles = request.body.asText.get.split("\n").toSet
+    val (authorized, unauthorized) = perms.checkPermissions(token, requestedFiles)
 
-    if (missingPermsFiles.nonEmpty) {
-      Forbidden(missingPermsFiles.mkString("\n"))
+    if (unauthorized.nonEmpty) {
+      Forbidden(unauthorized.mkString("\n"))
     } else {
-      val urls = okPermsFiles.map(file => (file, s3.presignedUrl(bucket, prefix, file).toString)).toMap
+      val urls = authorized.map(file => (file, s3.presignedUrl(bucket, prefix, file).toString)).toMap
       Ok(toJson(urls))
     }
   }
