@@ -12,7 +12,7 @@ class ConfigController @Inject()(val controllerComponents: ControllerComponents,
 
   private val keycloakUrl = config.get[String]("auth.url")
   private val keycloakRealm = config.get[String]("auth.realm")
-  private val keycloakClientId = config.get[String]("auth.client-id")
+  private val keycloakClientId = config.get[String]("auth.public-client-id")
 
   def configuration(): Action[AnyContent] = Action { implicit request: Request[AnyContent] =>
     val configuration = toJson(
