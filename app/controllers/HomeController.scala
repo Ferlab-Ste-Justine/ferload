@@ -34,7 +34,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
   private val prefix = config.get[String]("aws.prefix")
 
   def downloadLinks(): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
-    val token = request.headers.get(HeaderNames.AUTHORIZATION).get
+    val token = request.headers.get(HeaderNames.AUTHORIZATION).get.replace("Bearer ", "")
     val requestedFiles = request.body.asText.get.split("\n")
     val okPermsFiles = perms.checkPermissions(token, requestedFiles)
     val missingPermsFiles = requestedFiles.filter(!okPermsFiles.contains(_))
