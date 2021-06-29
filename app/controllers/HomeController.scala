@@ -3,7 +3,7 @@ package controllers
 import auth.{AuthAction, UserRequest}
 import play.api.http.HeaderNames
 import play.api.{Configuration, Logging}
-import play.api.libs.json.Json
+import play.api.libs.json.Json.toJson
 import play.api.mvc._
 import services.aws.S3Service
 import services.keycloak.PermsService
@@ -42,8 +42,8 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
     if (missingPermsFiles.nonEmpty) {
       Forbidden(missingPermsFiles.mkString("\n"))
     } else {
-      val urls = okPermsFiles.map(s3.presignedUrl(bucket, prefix, _))
-      Ok(urls.mkString("\n"))
+      val urls = okPermsFiles.map(file => (file, s3.presignedUrl(bucket, prefix, file).toString)).toMap
+      Ok(toJson(urls))
     }
   }
 
