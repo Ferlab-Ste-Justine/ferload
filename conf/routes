@@ -11,5 +11,5 @@ GET        /assets/*file        controllers.Assets.versioned(path="/public", fil
 +anyhost
 GET        /status            controllers.StatusController.index()
 GET        /config            controllers.ConfigController.configuration()
-GET        /:file             controllers.HomeController.get(file: String)
+POST       /downloadLinks     controllers.HomeController.downloadLinks()
 

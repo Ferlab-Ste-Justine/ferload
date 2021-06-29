@@ -33,7 +33,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
   private val bucket = config.get[String]("aws.bucket")
   private val prefix = config.get[String]("aws.prefix")
 
-  def link(): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
+  def downloadLinks(): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
     val token = request.headers.get(HeaderNames.AUTHORIZATION).get
     val requestedFiles = request.body.asText.get.split("\n")
     val okPermsFiles = perms.checkPermissions(token, requestedFiles)
