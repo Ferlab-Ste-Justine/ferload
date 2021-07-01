@@ -17,7 +17,22 @@ class PermsService @Inject()(config: Configuration) {
     config.get[String]("auth.client-id"),
     Collections.singletonMap("secret",config.get[String]("auth.secret-key")), null
   )
-  val authzClient: AuthzClient = AuthzClient.create(keycloakConfig);
+  val authzClient: AuthzClient = AuthzClient.create(keycloakConfig)
+  val resourcesPolicy: String = config.get[String]("auth.resources-policy")
+
+  private def checkCQDGPermissions(files: Set[String], permsNames: Set[String]): (Set[String], Set[String]) = {
+    val authorized = files.intersect(permsNames)
+    val unauthorized = files.diff(permsNames)
+    (authorized, unauthorized)
+  }
+
+  private def checkCLINPermissions(files: Set[String], permsNames: Set[String]): (Set[String], Set[String]) = {
+    if(permsNames.contains("DOWNLOAD")) {
+      (files, Set())  // all authorized
+    }else{
+      (Set(), files)  // all unauthorized
+    }
+  }
 
   def checkPermissions(token: String, files: Set[String]): (Set[String], Set[String]) = {
     try {
@@ -27,10 +42,12 @@ class PermsService @Inject()(config: Configuration) {
       val perms = authzClient.protection().introspectRequestingPartyToken(authorizationToken);
       val permsNames = perms.getPermissions.asScala.map(_.getResourceName).toSet
 
-      val authorized = files.intersect(permsNames)
-      val unauthorized = files.diff(permsNames)
+      resourcesPolicy match {
+        case "cqdg" => checkCQDGPermissions(files, permsNames)
+        case "clin" => checkCLINPermissions(files, permsNames)
+        case _ => throw new RuntimeException(s"Unsupported resources-policy: $resourcesPolicy")
+      }
 
-      (authorized, unauthorized)
     } catch {
       // if 403 user has no permissions at all, return all files as unauthorized
       case e: HttpResponseException => if(e.getStatusCode==403) (Set(), files) else throw e
