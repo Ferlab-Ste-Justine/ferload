@@ -1,7 +1,7 @@
 package controllers
 
 import auth.{AuthAction, UserRequest}
-import play.api.http.HeaderNames
+import org.keycloak.authorization.client.AuthorizationDeniedException
 import play.api.{Configuration, Logging}
 import play.api.libs.json.Json.toJson
 import play.api.mvc._
@@ -34,7 +34,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
   private val prefix = config.get[String]("aws.prefix")
 
   def downloadLinks(): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
-    val requestedFiles = request.body.asText.get.split("\n").toSet
+    val requestedFiles = extractRequestedFiles(request)
     val (authorized, unauthorized) = perms.checkPermissions(request.token, requestedFiles)
 
     if (unauthorized.nonEmpty) {
@@ -43,6 +43,25 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
       val urls = authorized.map(file => (file, s3.presignedUrl(bucket, prefix, file).toString)).toMap
       Ok(toJson(urls))
     }
+  }
+
+  def createPermissions(userName: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
+    val requestedFiles = extractRequestedFiles(request)
+    try {
+      val (created, notCreated) = perms.createPermissions(request.token, userName, requestedFiles)
+      if (notCreated.nonEmpty) {
+        NotFound(notCreated.mkString("\n"))
+      } else {
+        Ok(created.mkString("\n"))
+      }
+    } catch {
+      case _: AuthorizationDeniedException => Forbidden(requestedFiles.mkString("\n"))
+      case e: Throwable => throw e
+    }
+  }
+
+  private def extractRequestedFiles(request: UserRequest[AnyContent]) = {
+    request.body.asText.get.split("\n").toSet
   }
 
 }

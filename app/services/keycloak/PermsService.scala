@@ -1,8 +1,10 @@
 package services.keycloak
 
-import org.keycloak.authorization.client.AuthzClient
+import org.keycloak.authorization.client.{AuthorizationDeniedException, AuthzClient}
 import org.keycloak.authorization.client.util.HttpResponseException
+import org.keycloak.representations.idm.authorization.{PermissionRequest, ResourceRepresentation, UmaPermissionRepresentation}
 import play.api.Configuration
+import play.api.mvc.Results.Forbidden
 
 import java.util.Collections
 import javax.inject.{Inject, Singleton}
@@ -53,5 +55,39 @@ class PermsService @Inject()(config: Configuration) {
       case e: HttpResponseException => if(e.getStatusCode==403) (Set(), files) else throw e
       case e: Throwable => throw e
     }
+  }
+
+  def createPermissions(token: String, userName:String, files: Set[String]): (Set[String], Set[String]) = {
+    val protection = authzClient.protection(token)  // insure token has resource creation rights
+    val resources = protection.resource()
+
+    val createdPerms = files.map(file => {
+      val res = resources.findByName(file)
+      if(res != null) {  // resource has to exist
+        if(!res.getOwnerManagedAccess) {  // has to be true
+          res.setOwnerManagedAccess(true)
+          resources.update(res)
+        }
+        val policy = protection.policy(res.getId)
+        val permName = file
+        val existingPerm = policy.find(permName, null,  0 , 1) // should be only one perm with this name
+          .stream().findFirst
+        existingPerm.ifPresentOrElse(perm => {
+          if(!perm.getUsers.contains(userName)){
+            perm.addUser(userName)
+            policy.update(perm)
+          }
+        }, () => {
+          val perm = new UmaPermissionRepresentation
+          perm.setName(permName)
+          perm.addUser(userName)
+          policy.create(perm)
+        })
+        file
+      }else {
+        null
+      }
+    })
+    (createdPerms, files.diff(createdPerms))
   }
 }
