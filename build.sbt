@@ -14,6 +14,7 @@ libraryDependencies += ws
 libraryDependencies += "software.amazon.awssdk" % "s3" % "2.16.66"
 //libraryDependencies += "com.amazonaws" % "aws-java-sdk-s3" % "1.11.880"
 libraryDependencies += "org.keycloak" % "keycloak-core" % keycloakVersion
+libraryDependencies += "org.keycloak" % "keycloak-authz-client" % keycloakVersion
 //libraryDependencies += "org.keycloak" % "keycloak-adapter-core" % keycloakVersion
 libraryDependencies += "org.mockito" % "mockito-core" % "3.8.0" % Test
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test

@@ -10,5 +10,6 @@ GET        /igv/:id                    controllers.HomeController.igv(id:String)
 GET        /assets/*file        controllers.Assets.versioned(path="/public", file: Asset)
 +anyhost
 GET        /status            controllers.StatusController.index()
-GET        /:file            controllers.HomeController.get(file: String)
+GET        /config            controllers.ConfigController.configuration()
+POST       /downloadLinks     controllers.HomeController.downloadLinks()
 
