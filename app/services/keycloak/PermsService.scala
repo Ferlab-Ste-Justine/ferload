@@ -61,7 +61,7 @@ class PermsService @Inject()(config: Configuration) {
     val protection = authzClient.protection(token)  // insure token has resource creation rights
     val resources = protection.resource()
 
-    val createdPerms = files.map(file => {
+    val createdPerms = files.flatMap(file => {
       val res = resources.findByName(file)
       if(res != null) {  // resource has to exist
         if(!res.getOwnerManagedAccess) {  // has to be true
@@ -83,9 +83,9 @@ class PermsService @Inject()(config: Configuration) {
           perm.addUser(userName)
           policy.create(perm)
         })
-        file
-      }else {
-        null
+        Some(file)
+      } else {
+        None
       }
     })
     (createdPerms, files.diff(createdPerms))

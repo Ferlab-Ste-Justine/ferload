@@ -56,7 +56,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
       }
     } catch {
       case _: AuthorizationDeniedException => Forbidden(requestedFiles.mkString("\n"))
-      case e: Throwable => throw e
+      case e: Throwable => InternalServerError(s"Failed to create permissions: ${e.getMessage}")
     }
   }
 
