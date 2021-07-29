@@ -1,7 +1,7 @@
 package controllers
 
 import auth.{AuthAction, UserRequest}
-import play.api.http.HeaderNames
+import play.api.libs.json.Json
 import play.api.{Configuration, Logging}
 import play.api.libs.json.Json.toJson
 import play.api.mvc._
@@ -32,6 +32,16 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
 
   private val bucket = config.get[String]("aws.bucket")
   private val prefix = config.get[String]("aws.prefix")
+
+  def get(file: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
+    val url = s3.presignedUrl(bucket, prefix, file)
+    request.getQueryString("format") match {
+      case Some("json") =>
+        Ok(Json.toJson(Map("url" -> url.toString)))
+      case _ =>
+        Found(url.toString)
+    }
+  }
 
   def downloadLinks(): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
     val requestedFiles = request.body.asText.get.split("\n").toSet
