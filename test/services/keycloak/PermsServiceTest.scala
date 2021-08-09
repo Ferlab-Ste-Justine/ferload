@@ -1,15 +1,18 @@
 package services.keycloak
 
+import auth.UserRequest
 import org.keycloak.authorization.client.AuthzClient
 import org.keycloak.authorization.client.representation.TokenIntrospectionResponse
 import org.keycloak.authorization.client.resource.{AuthorizationResource, ProtectionResource}
 import org.keycloak.authorization.client.util.HttpResponseException
+import org.keycloak.representations.AccessToken
 import org.keycloak.representations.idm.authorization.{AuthorizationResponse, Permission}
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import play.api.Configuration
+import play.api.mvc.AnyContent
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
@@ -27,7 +30,7 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
   val authzResource = mock(classOf[AuthorizationResource])
   val authzResponse = mock(classOf[AuthorizationResponse])
   val authzProtection = mock(classOf[ProtectionResource])
-  val tokenInstrospection = mock(classOf[TokenIntrospectionResponse])
+  val tokenIntrospection = mock(classOf[TokenIntrospectionResponse])
   val authzClient: AuthzClient = mock(classOf[AuthzClient])
 
   val permsService = new PermsService(config, permsClient)
@@ -40,13 +43,13 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
     Mockito.reset(authzResource)
     Mockito.reset(authzResponse)
     Mockito.reset(authzProtection)
-    Mockito.reset(tokenInstrospection)
+    Mockito.reset(tokenIntrospection)
 
     when(authzClient.authorization(anyString)).thenReturn(authzResource)
     when(authzResource.authorize).thenReturn(authzResponse)
     when(authzResponse.getToken).thenReturn("token")
     when(authzClient.protection).thenReturn(authzProtection)
-    when(authzProtection.introspectRequestingPartyToken(anyString)).thenReturn(tokenInstrospection)
+    when(authzProtection.introspectRequestingPartyToken(anyString)).thenReturn(tokenIntrospection)
   }
 
   private def assertAllowed(files: Set[String], authorized: Set[String], unauthorized: Set[String]) = {
@@ -111,9 +114,10 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
     val files = Set("f1", "f2", "f3")
     val permsNames = Set(resourcesPolicyGlobalName, "foo")
     val tokenPerms = permsNames.map(name => new Permission(name, name, null, null)).toList.asJava
-    when(tokenInstrospection.getPermissions).thenReturn(tokenPerms)
+    when(tokenIntrospection.getPermissions).thenReturn(tokenPerms)
+    val userRequest = new UserRequest[AnyContent](new AccessToken(), "token", null)
     // execution
-    val (authorized, unauthorized) = permsService.checkPermissions("foo", files)
+    val (authorized, unauthorized) = permsService.checkPermissions(userRequest, files)
     // assert
     assertAllowed(files, authorized, unauthorized)
   }
@@ -127,9 +131,10 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
     val permsNames = Set("f1", "f2", "f3", "f4", "f5")
 
     val tokenPerms = permsNames.map(name => new Permission(name, name, null, null)).toList.asJava
-    when(tokenInstrospection.getPermissions).thenReturn(tokenPerms)
+    when(tokenIntrospection.getPermissions).thenReturn(tokenPerms)
+    val userRequest = new UserRequest[AnyContent](new AccessToken(), "token", null)
     // execution
-    val (authorized, unauthorized) = permsService.checkPermissions("foo", files)
+    val (authorized, unauthorized) = permsService.checkPermissions(userRequest, files)
     // assert
     assertAllowed(files, authorized, unauthorized)
   }
@@ -138,9 +143,10 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
     // setup + mocks
     when(authzClient.authorization(anyString)).thenThrow(new HttpResponseException("something bad", 500, null, null))
     val permsService = new PermsService(config, permsClient)
+    val userRequest = new UserRequest[AnyContent](new AccessToken(), "token", null)
     // execution + assert
     assertThrows[HttpResponseException] {
-      permsService.checkPermissions("foo", null)
+      permsService.checkPermissions(userRequest, null)
     }
   }
 
@@ -148,8 +154,9 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
     // setup + mocks
     val files = Set("f1", "f2", "f3")
     when(authzClient.authorization(anyString)).thenThrow(new HttpResponseException("not allowed at all", 403, null, null))
+    val userRequest = new UserRequest[AnyContent](new AccessToken(), "token", null)
     // execution
-    val (authorized, unauthorized) = permsService.checkPermissions("foo", files)
+    val (authorized, unauthorized) = permsService.checkPermissions(userRequest, files)
     // assert
     assertNotAllowed(files, authorized, unauthorized)
   }
@@ -158,9 +165,10 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
     // setup + mocks
     when(config.get[String]("auth.resources-policy")).thenReturn("foo")
     val permsService = new PermsService(config, permsClient)
+    val userRequest = new UserRequest[AnyContent](new AccessToken(), "token", null)
     // execution + assert
     assertThrows[IllegalStateException] {
-      permsService.checkPermissions("foo", null)
+      permsService.checkPermissions(userRequest, null)
     }
   }
 

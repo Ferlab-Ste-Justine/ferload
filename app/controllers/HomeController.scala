@@ -46,7 +46,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
 
   def downloadLinks(): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
     val requestedFiles = extractRequestedFiles(request)
-    val (authorized, unauthorized) = perms.checkPermissions(request.token, requestedFiles)
+    val (authorized, unauthorized) = perms.checkPermissions(request, requestedFiles)
 
     if (unauthorized.nonEmpty) {
       Forbidden(unauthorized.mkString("\n"))

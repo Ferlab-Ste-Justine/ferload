@@ -1,9 +1,12 @@
 package services.keycloak
 
+import auth.UserRequest
 import org.keycloak.authorization.client.{AuthorizationDeniedException, AuthzClient}
 import org.keycloak.authorization.client.util.HttpResponseException
+import org.keycloak.representations.AccessToken
 import org.keycloak.representations.idm.authorization.{PermissionRequest, ResourceRepresentation, UmaPermissionRepresentation}
 import play.api.Configuration
+import play.api.mvc.AnyContent
 import play.api.mvc.Results.Forbidden
 
 import java.util.Collections
@@ -35,11 +38,12 @@ class PermsService @Inject()(config: Configuration, permsClient: PermsClient) {
     }
   }
 
-  def checkPermissions(token: String, files: Set[String]): (Set[String], Set[String]) = {
+  def checkPermissions(userRequest: UserRequest[AnyContent], files: Set[String]): (Set[String], Set[String]) = {
     try {
       // need to convert the user token into authorization token, because the user token is from a public client
       // and authorization token is from the client with credentials where the resources are declared
-      val authorizationToken = permsClient.authzClient.authorization(token).authorize().getToken
+      val authorizationToken = if (userRequest.isRpt) userRequest.token
+        else permsClient.authzClient.authorization(userRequest.token).authorize().getToken
       val perms = permsClient.authzClient.protection().introspectRequestingPartyToken(authorizationToken)
       val permsNames = perms.getPermissions.asScala.map(_.getResourceName).toSet
 
