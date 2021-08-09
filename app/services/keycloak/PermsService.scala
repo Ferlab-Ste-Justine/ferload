@@ -11,25 +11,24 @@ import javax.inject.{Inject, Singleton}
 import scala.jdk.CollectionConverters._
 
 @Singleton
-class PermsService @Inject()(config: Configuration) {
+class PermsService @Inject()(config: Configuration, permsClient: PermsClient) {
 
-  val keycloakConfig = new org.keycloak.authorization.client.Configuration(
-    config.get[String]("auth.url"),
-    config.get[String]("auth.realm"),
-    config.get[String]("auth.client-id"),
-    Collections.singletonMap("secret",config.get[String]("auth.secret-key")), null
-  )
-  val authzClient: AuthzClient = AuthzClient.create(keycloakConfig)
   val resourcesPolicy: String = config.get[String]("auth.resources-policy")
+  val resourcesPolicyGlobalName: String = config.get[String]("auth.resources-policy-global-name")
 
-  private def checkCQDGPermissions(files: Set[String], permsNames: Set[String]): (Set[String], Set[String]) = {
-    val authorized = files.intersect(permsNames)
-    val unauthorized = files.diff(permsNames)
-    (authorized, unauthorized)
+  def checkByResourcePermissions(files: Set[String], permsNames: Set[String]): (Set[String], Set[String]) = {
+    val globalAuthorized = checkGlobalPermissions(files, permsNames)
+    if(globalAuthorized._1.nonEmpty) {
+      globalAuthorized
+    } else {
+      val authorized = files.intersect(permsNames)
+      val unauthorized = files.diff(permsNames)
+      (authorized, unauthorized)
+    }
   }
 
-  private def checkCLINPermissions(files: Set[String], permsNames: Set[String]): (Set[String], Set[String]) = {
-    if(permsNames.contains("DOWNLOAD")) {
+  def checkGlobalPermissions(files: Set[String], permsNames: Set[String]): (Set[String], Set[String]) = {
+    if(permsNames.contains(resourcesPolicyGlobalName)) {
       (files, Set())  // all authorized
     }else{
       (Set(), files)  // all unauthorized
@@ -40,14 +39,14 @@ class PermsService @Inject()(config: Configuration) {
     try {
       // need to convert the user token into authorization token, because the user token is from a public client
       // and authorization token is from the client with credentials where the resources are declared
-      val authorizationToken = authzClient.authorization(token).authorize().getToken
-      val perms = authzClient.protection().introspectRequestingPartyToken(authorizationToken);
+      val authorizationToken = permsClient.authzClient.authorization(token).authorize().getToken
+      val perms = permsClient.authzClient.protection().introspectRequestingPartyToken(authorizationToken)
       val permsNames = perms.getPermissions.asScala.map(_.getResourceName).toSet
 
       resourcesPolicy match {
-        case "cqdg" => checkCQDGPermissions(files, permsNames)
-        case "clin" => checkCLINPermissions(files, permsNames)
-        case _ => throw new RuntimeException(s"Unsupported resources-policy: $resourcesPolicy")
+        case "global" => checkGlobalPermissions(files, permsNames)
+        case "by-resource" => checkByResourcePermissions(files, permsNames)
+        case _ => throw new IllegalStateException(s"Unsupported resources-policy: $resourcesPolicy")
       }
 
     } catch {
@@ -58,7 +57,7 @@ class PermsService @Inject()(config: Configuration) {
   }
 
   def createPermissions(token: String, userName:String, files: Set[String]): (Set[String], Set[String]) = {
-    val protection = authzClient.protection(token)  // insure token has resource creation rights
+    val protection = permsClient.authzClient.protection(token)  // insure token has resource creation rights
     val resources = protection.resource()
 
     val createdPerms = files.flatMap(file => {
