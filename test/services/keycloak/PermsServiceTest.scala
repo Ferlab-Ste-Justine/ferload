@@ -24,7 +24,7 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
 
   val config = mock(classOf[Configuration])
   // config mocks
-  when(config.get[String]("auth.resources-policy-global-name")).thenReturn("DOWNLOAD")
+  when(config.get[String]("auth.resources-global-name")).thenReturn("DOWNLOAD")
 
   val permsClient: PermsClient = mock(classOf[PermsClient])
   val authzResource = mock(classOf[AuthorizationResource])
@@ -35,7 +35,7 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
 
   val permsService = new PermsService(config, permsClient)
   when(permsClient.authzClient).thenReturn(authzClient)
-  val resourcesPolicyGlobalName: String = config.get[String]("auth.resources-policy-global-name")
+  val resourcesGlobalName: String = config.get[String]("auth.resources-global-name")
 
   before {
     // keycloak mocks
@@ -64,21 +64,7 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
     assert(files.subsetOf(unauthorized))
   }
 
-  test("check-perms-global-allowed") {
-    val files = Set("f1", "f2", "f3")
-    val permsNames = Set(resourcesPolicyGlobalName, "foo")
-    val (authorized, unauthorized) = permsService.checkGlobalPermissions(files, permsNames)
-    assertAllowed(files, authorized, unauthorized)
-  }
-
-  test("check-perms-global-not-allowed") {
-    val files = Set("f1", "f2", "f3")
-    val permsNames = Set("foo", "bar")
-    val (authorized, unauthorized) = permsService.checkGlobalPermissions(files, permsNames)
-    assertNotAllowed(files, authorized, unauthorized)
-  }
-
-  test("check-perms-by-resource-allowed") {
+  test("check-by-resource-allowed") {
     val files = Set("f1", "f2", "f3")
     val permsNames = Set("f1", "f2", "f3", "f4", "f5")
     val (authorized, unauthorized) = permsService.checkByResourcePermissions(files, permsNames)
@@ -87,16 +73,16 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
     assert(files.subsetOf(authorized))
   }
 
-  test("check-perms-by-resource-global") {
+  test("check-by-resource-global") {
     val files = Set("f1", "f2", "f3")
-    val permsNames = Set("foo", "bar", "f1", resourcesPolicyGlobalName)
+    val permsNames = Set("foo", "bar", "f1", resourcesGlobalName)
     val (authorized, unauthorized) = permsService.checkByResourcePermissions(files, permsNames)
     assert(authorized.nonEmpty)
     assert(unauthorized.isEmpty)
     assert(files.subsetOf(authorized))
   }
 
-  test("check-perms-by-resource-not-allowed") {
+  test("check-by-resource-not-allowed") {
     val files = Set("f1", "f2", "f3")
     val permsNames = Set("f1", "f2")
     val (authorized, unauthorized) = permsService.checkByResourcePermissions(files, permsNames)
@@ -108,11 +94,8 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
 
   test("check-perms-global-token") {
     // setup + mocks
-    when(config.get[String]("auth.resources-policy")).thenReturn("global")
-    val permsService = new PermsService(config, permsClient)
-
     val files = Set("f1", "f2", "f3")
-    val permsNames = Set(resourcesPolicyGlobalName, "foo")
+    val permsNames = Set(resourcesGlobalName, "foo")
     val tokenPerms = permsNames.map(name => new Permission(name, name, null, null)).toList.asJava
     when(tokenIntrospection.getPermissions).thenReturn(tokenPerms)
     val userRequest = new UserRequest[AnyContent](new AccessToken(), "token", null)
@@ -124,9 +107,6 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
 
   test("check-perms-by-resource-token") {
     // setup + mocks
-    when(config.get[String]("auth.resources-policy")).thenReturn("by-resource")
-    val permsService = new PermsService(config, permsClient)
-
     val files = Set("f1", "f2", "f3")
     val permsNames = Set("f1", "f2", "f3", "f4", "f5")
 
@@ -139,7 +119,7 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
     assertAllowed(files, authorized, unauthorized)
   }
 
-  test("check-perms-exception") {
+  test("check-perms-http-exception") {
     // setup + mocks
     when(authzClient.authorization(anyString)).thenThrow(new HttpResponseException("something bad", 500, null, null))
     val permsService = new PermsService(config, permsClient)
@@ -150,7 +130,7 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
     }
   }
 
-  test("check-perms-403") {
+  test("check-perms-http-403") {
     // setup + mocks
     val files = Set("f1", "f2", "f3")
     when(authzClient.authorization(anyString)).thenThrow(new HttpResponseException("not allowed at all", 403, null, null))
@@ -161,9 +141,9 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
     assertNotAllowed(files, authorized, unauthorized)
   }
 
-  test("check-perms-invalid-resources-policy-config") {
+  test("check-perms-other-exception") {
     // setup + mocks
-    when(config.get[String]("auth.resources-policy")).thenReturn("foo")
+    when(authzClient.authorization(anyString)).thenThrow(new IllegalStateException("something bad"))
     val permsService = new PermsService(config, permsClient)
     val userRequest = new UserRequest[AnyContent](new AccessToken(), "token", null)
     // execution + assert
@@ -171,5 +151,6 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
       permsService.checkPermissions(userRequest, null)
     }
   }
+
 
 }
