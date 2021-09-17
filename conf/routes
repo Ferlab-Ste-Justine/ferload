@@ -9,9 +9,9 @@ GET        /igv/:id                    controllers.HomeController.igv(id:String)
 # Map static resources from the /public folder to the /assets URL path
 GET        /assets/*file        controllers.Assets.versioned(path="/public", file: Asset)
 +anyhost
-GET        /:file                           controllers.HomeController.get(file: String)
 GET        /status                          controllers.StatusController.index()
 GET        /config                          controllers.ConfigController.configuration()
 POST       /downloadLinks                   controllers.HomeController.downloadLinks()
 POST       /createPermissions/:userName     controllers.HomeController.createPermissions(userName:String)
-
+# always at the end of routing otherwise will be always true
+GET        /:file                           controllers.HomeController.get(file: String)
