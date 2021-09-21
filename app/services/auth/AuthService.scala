@@ -32,7 +32,7 @@ class AuthService @Inject()(ws: WSClient, config: Configuration, cache: AsyncCac
       case Some(pk) =>
         val accessToken = tokenVerifier.publicKey(pk)
           .withChecks(TokenVerifier.IS_ACTIVE, new TokenVerifier.RealmUrlCheck(issuer))
-          .audience(audience)
+          //.audience(audience)
           .verify()
           .getToken
         accessToken
