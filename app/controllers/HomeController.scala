@@ -35,12 +35,17 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
   private val prefix = config.get[String]("aws.prefix")
 
   def get(file: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
-    val url = s3.presignedUrl(bucket, prefix, file)
-    request.getQueryString("format") match {
-      case Some("json") =>
-        Ok(Json.toJson(Map("url" -> url.toString)))
-      case _ =>
-        Found(url.toString)
+    val (_, unauthorized) = perms.checkPermissions(request, Set(file))
+    if (unauthorized.nonEmpty) {
+      Forbidden(file)
+    } else {
+      val url = s3.presignedUrl(bucket, prefix, file)
+      request.getQueryString("format") match {
+        case Some("json") =>
+          Ok(Json.toJson(Map("url" -> url.toString)))
+        case _ =>
+          Found(url.toString)
+      }
     }
   }
 
