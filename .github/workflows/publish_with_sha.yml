@@ -1,16 +1,17 @@
-name: Publish Image Using Tag Name
+name: Publish Image Using Sha and Timestamp
 
 on:
   push:
-    tags:
-      - v*
+    branches:
+      - main
 
 jobs:
   push:
-    name: Publish Image using tags
+    name: Publish Image using commit sha and timestamp
     runs-on: ubuntu-18.04
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
@@ -24,11 +25,9 @@ jobs:
       - name: Build
         run: sbt -v -Dfile.encoding=UTF-8 +universal:packageZipTarball
       - name: Push the image on the registry
-        uses: Ferlab-Ste-Justine/action-push-image@master
+        uses: Ferlab-Ste-Justine/action-push-image@v2
         with:
           username: ${{ secrets.FERLAB_DOCKER_HUB_USER }}
           password: ${{ secrets.FERLAB_DOCKER_HUB_TOKEN }}
           image: ferlabcrsj/ferload
-          tag_source: ref
-          location: .
-          dockerfile: Dockerfile
+          tag_format: "{sha}-{timestamp}"

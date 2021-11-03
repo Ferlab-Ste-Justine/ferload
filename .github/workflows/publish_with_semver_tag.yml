@@ -1,14 +1,13 @@
-
-name: Test, Build and Publish
+name: Publish Image Using Semver Tag
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - v*
 
 jobs:
-  publish:
-    name: Publish Image
+  push:
+    name: Publish Image using tags
     runs-on: ubuntu-18.04
     steps:
       - name: Checkout
@@ -25,7 +24,10 @@ jobs:
           report_paths: 'target/test-reports/TEST-*.xml'
       - name: Build
         run: sbt -v -Dfile.encoding=UTF-8 +universal:packageZipTarball
-      - name: Log into registry
-        run: echo "${{ secrets.FERLAB_DOCKER_HUB_TOKEN }}" | docker login -u ${{ secrets.FERLAB_DOCKER_HUB_USER }} --password-stdin
-      - name: Publish the image
-        run: ./push_image.sh
+      - name: Push the image on the registry
+        uses: Ferlab-Ste-Justine/action-push-image@v2
+        with:
+          username: ${{ secrets.FERLAB_DOCKER_HUB_USER }}
+          password: ${{ secrets.FERLAB_DOCKER_HUB_TOKEN }}
+          image: ferlabcrsj/ferload
+          tag_format: "{semver}"
