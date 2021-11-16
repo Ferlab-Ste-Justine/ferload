@@ -32,14 +32,12 @@ class S3Service @Inject()(config: Configuration) {
     .build()
 
 
-  def presignedUrl(bucket: String, prefix: String, file: String, expiration: Duration = Duration.ofHours(1)): URL = {
-
-    val key = if (prefix.isEmpty) file else s"$prefix/$file"
+  def presignedUrl(bucket: String, file: String, expiration: Duration = Duration.ofHours(1)): URL = {
 
     val getObjectRequest =
       GetObjectRequest.builder()
         .bucket(bucket)
-        .key(key)
+        .key(file)
         .build()
 
     val getObjectPresignRequest = GetObjectPresignRequest.builder
