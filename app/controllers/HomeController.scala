@@ -32,14 +32,13 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
   }
 
   private val bucket = config.get[String]("aws.bucket")
-  private val prefix = config.get[String]("aws.prefix")
 
   def get(file: String): Action[AnyContent] = authAction { implicit request: UserRequest[AnyContent] =>
     val (_, unauthorized) = perms.checkPermissions(request, Set(file))
     if (unauthorized.nonEmpty) {
       Forbidden(file)
     } else {
-      val url = s3.presignedUrl(bucket, prefix, file)
+      val url = s3.presignedUrl(bucket, file)
       request.getQueryString("format") match {
         case Some("json") =>
           Ok(Json.toJson(Map("url" -> url.toString)))
@@ -56,7 +55,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
     if (unauthorized.nonEmpty) {
       Forbidden(unauthorized.mkString("\n"))
     } else {
-      val urls = authorized.map(file => (file, s3.presignedUrl(bucket, prefix, file).toString)).toMap
+      val urls = authorized.map(file => (file, s3.presignedUrl(bucket, file).toString)).toMap
       Ok(toJson(urls))
     }
   }
