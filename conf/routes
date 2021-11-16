@@ -14,4 +14,4 @@ GET        /config                          controllers.ConfigController.configu
 POST       /downloadLinks                   controllers.HomeController.downloadLinks()
 POST       /createPermissions/:userName     controllers.HomeController.createPermissions(userName:String)
 # always at the end of routing otherwise will be always true
-GET        /:file                           controllers.HomeController.get(file: String)
+GET        /*file                           controllers.HomeController.get(file: String)
