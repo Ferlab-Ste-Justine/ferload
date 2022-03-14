@@ -1,6 +1,6 @@
 FROM adoptopenjdk/openjdk11:alpine-jre
 
-RUN apk update && apk add bash
+RUN apk update && apk add bash ca-certificates openssl
 
 COPY target/universal/ferload.tgz .
 
