@@ -152,5 +152,17 @@ class PermsServiceTest extends FunSuite with BeforeAndAfter{
     }
   }
 
+  test("token has no permissions") {
+    // setup + mocks
+    val files = Set("f1", "f2", "f3")
+    when(tokenIntrospection.getPermissions).thenReturn(null)
+    val userRequest = new UserRequest[AnyContent](new AccessToken(), "token", null)
+    // execution
+    val (authorized, unauthorized) = permsService.checkPermissions(userRequest, files)
+    // assert
+    assert(authorized.isEmpty)
+    assert(unauthorized.nonEmpty)
+  }
+
 
 }
