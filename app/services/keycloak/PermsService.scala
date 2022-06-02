@@ -6,6 +6,7 @@ import org.keycloak.representations.idm.authorization.UmaPermissionRepresentatio
 import play.api.Configuration
 import play.api.mvc.AnyContent
 
+import java.util
 import javax.inject.{Inject, Singleton}
 import scala.jdk.CollectionConverters._
 
@@ -21,7 +22,7 @@ class PermsService @Inject()(config: Configuration, permsClient: PermsClient) {
       val authorizationToken = if (userRequest.isRpt) userRequest.token
       else permsClient.authzClient.authorization(userRequest.token).authorize().getToken
       val perms = permsClient.authzClient.protection().introspectRequestingPartyToken(authorizationToken)
-      val permsNames = perms.getPermissions.asScala.map(_.getResourceName).toSet
+      val permsNames = Option(perms.getPermissions).getOrElse(new util.ArrayList()).asScala.map(_.getResourceName).toSet
       checkByResourcePermissions(files, permsNames)
     } catch {
       // if 403 user has no permissions at all, return all files as unauthorized
