@@ -4,14 +4,14 @@ organization := "bio.ferlab"
 version := "1.0-SNAPSHOT"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
-val keycloakVersion = "12.0.4"
+val keycloakVersion = "17.0.1"
 
-scalaVersion := "2.13.3"
+scalaVersion := "2.13.9"
 
 libraryDependencies += guice
 libraryDependencies += caffeine
 libraryDependencies += ws
-libraryDependencies += "software.amazon.awssdk" % "s3" % "2.16.66"
+libraryDependencies += "software.amazon.awssdk" % "s3" % "2.17.295"
 //libraryDependencies += "com.amazonaws" % "aws-java-sdk-s3" % "1.11.880"
 libraryDependencies += "org.keycloak" % "keycloak-core" % keycloakVersion
 libraryDependencies += "org.keycloak" % "keycloak-authz-client" % keycloakVersion
