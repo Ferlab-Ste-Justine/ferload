@@ -9,6 +9,7 @@ import play.api.mvc._
 import services.aws.S3Service
 import services.keycloak.PermsService
 
+import java.time.Duration
 import javax.inject._
 
 /**
@@ -38,7 +39,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
     if (unauthorized.nonEmpty) {
       Forbidden(file)
     } else {
-      val url = s3.presignedUrl(bucket, file)
+      val url = s3.presignedUrl(bucket, file, Duration.ofHours(12))
       request.getQueryString("format") match {
         case Some("json") =>
           Ok(Json.toJson(Map("url" -> url.toString)))
@@ -55,7 +56,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents,pe
     if (unauthorized.nonEmpty) {
       Forbidden(unauthorized.mkString("\n"))
     } else {
-      val urls = authorized.map(file => (file, s3.presignedUrl(bucket, file).toString)).toMap
+      val urls = authorized.map(file => (file, s3.presignedUrl(bucket, file, Duration.ofHours(12)).toString)).toMap
       Ok(toJson(urls))
     }
   }
