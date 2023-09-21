@@ -1,7 +1,5 @@
 package bio.ferlab.ferload
 
-import bio.ferlab.ferload.HttpConfig.{DEFAULT_HOST, DEFAULT_PORT}
-
 
 case class Config(auth: AuthConfig, http: HttpConfig, s3Config: S3Config)
 
