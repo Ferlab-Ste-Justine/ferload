@@ -11,6 +11,7 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
 
 import java.net.{URI, URL}
 import java.time.Duration
+import scala.util.{Failure, Success, Try}
 
 class S3Service(s3Config: S3Config) {
   val confBuilder: S3Configuration = software.amazon.awssdk.services.s3.S3Configuration.builder()
@@ -38,11 +39,8 @@ class S3Service(s3Config: S3Config) {
 
   private val presignedUrlDuration: Duration = Duration.ofSeconds(s3Config.expirationPresignedUrlInSeconds)
 
-  def presignedUrlDefaultBucket(file: String): IO[String] =
-    s3Config.defaultBucket.map(presignedUrl(_, file)).getOrElse(IO.raiseError(new IllegalStateException("No default bucket defined in configuration")))
 
-
-  def presignedUrl(bucket: String, file: String): IO[String] = IO.pure {
+  def presignedUrl(bucket: String, file: String): String = {
 
     val getObjectRequest =
       GetObjectRequest.builder()
@@ -62,3 +60,16 @@ class S3Service(s3Config: S3Config) {
 
 
 }
+
+object S3Service:
+  def parseS3Url(s3Url: String): Try[(String, String)] = {
+    val s3Pattern = "s3://([^/]+)/(.+)".r
+    s3Url match {
+      case s3Pattern(bucket, path) => Success((bucket, path))
+      case _ => Failure(new IllegalArgumentException("Invalid S3 URL format"))
+    }
+  }
+
+  def parseS3Urls(urls: Seq[String]): Try[(String, String)] = {
+    urls.to(LazyList).map(S3Service.parseS3Url).find(_.isSuccess).getOrElse(Failure(new IllegalStateException("No S3 URL found")))
+  }

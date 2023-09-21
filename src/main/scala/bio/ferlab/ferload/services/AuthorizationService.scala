@@ -1,8 +1,8 @@
 package bio.ferlab.ferload.services
 
 import bio.ferlab.ferload.AuthConfig
-import bio.ferlab.ferload.services.AuthorizationService.{ErrorResponse, IntrospectResponse, PartyToken, User}
-import cats.effect.{IO, Resource}
+import bio.ferlab.ferload.services.AuthorizationService.{ErrorResponse, IntrospectResponse, PartyToken, Resource, User}
+import cats.effect.IO
 import io.circe.Error
 import io.circe.generic.auto.*
 import sttp.capabilities.fs2.Fs2Streams
@@ -29,11 +29,10 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
       .body(body, "utf-8")
       .response(asJson[PartyToken])
       .send(backend)
-
     auth.flatMap(r => IO.fromEither(r.body).map(_.access_token))
   }
 
-  def introspectPartyToken(partyToken: String): IO[IntrospectResponse] = {
+  private def introspectPartyToken(partyToken: String): IO[IntrospectResponse] = {
 
     val introspect = basicRequest.post(uri"$baseUri/protocol/openid-connect/token/introspect")
       .contentType(ApplicationXWwwFormUrlencoded)
@@ -59,10 +58,45 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
 
     r.map {
         case User(_, permissions) if containAllPermissions(resources, permissions) => Right(User(token, permissions))
-        case _ => Left((StatusCode.Forbidden, ErrorResponse("Forbidden")))
+        case _ => Left((StatusCode.Forbidden, ErrorResponse("Forbidden", 403)))
       }
-      .recover { case HttpError(_, statusCode) if Seq(StatusCode.Unauthorized, StatusCode.Forbidden).contains(statusCode) => Left((statusCode, ErrorResponse("Unauthorized"))).withRight[User] }
+      .recover {
+        case HttpError(_, statusCode) if Seq(StatusCode.Unauthorized, StatusCode.Forbidden).contains(statusCode) => Left((statusCode, ErrorResponse("Unauthorized", statusCode.code))).withRight[User]
+        case e: HttpError[String] if e.statusCode == StatusCode.BadRequest && e.body.contains("invalid_resource")  => Left((StatusCode.NotFound, ErrorResponse("Not Found", 404))).withRight[User]
+      }
 
+  }
+
+  def getResourceById(id: String): IO[Resource] = {
+    for {
+      token <- requestClientToken()
+      resource <- fetchResourceById(id, token.access_token)
+    } yield resource
+
+  }
+
+  private def fetchResourceById(id: String, token: String): IO[Resource] = {
+
+    val auth: IO[Response[Either[ResponseException[String, Error], Resource]]] = basicRequest.get(uri"$baseUri/authz/protection/resource_set/$id")
+      .auth.bearer(token)
+      .response(asJson[Resource])
+      .send(backend)
+    auth.flatMap(r => IO.fromEither(r.body))
+
+  }
+
+  private def requestClientToken(): IO[PartyToken] = {
+    val body: Seq[(String, String)] = Seq(
+      "client_id" -> authConfig.clientId,
+      "client_secret" -> authConfig.clientSecret,
+      "grant_type" -> "client_credentials"
+    )
+    val auth: IO[Response[Either[ResponseException[String, Error], PartyToken]]] = basicRequest.post(uri"$baseUri/protocol/openid-connect/token")
+      .contentType(ApplicationXWwwFormUrlencoded)
+      .body(body, "utf-8")
+      .response(asJson[PartyToken])
+      .send(backend)
+    auth.flatMap(r => IO.fromEither(r.body))
   }
 
   private def containAllPermissions(resources: Seq[String], permissions: Set[AuthorizationService.Permissions]): Boolean = {
@@ -71,16 +105,10 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
       resourceInPermissions.contains(r)
     })
   }
-
-  def globalAuthLogic(token: String): IO[Either[(StatusCode, ErrorResponse), User]] = {
-    authConfig.resourcesGlobalName.map {
-      resourceGlobalName => authLogic(token, Seq(resourceGlobalName))
-    }.getOrElse(IO.pure(Left((StatusCode.Forbidden, ErrorResponse("Forbidden")))))
-  }
 }
 
 object AuthorizationService:
-  case class PartyToken(access_token: String, expires_in: Int, refresh_expires_in: Int, refresh_token: String, token_type: String)
+  case class PartyToken(access_token: String, expires_in: Int, refresh_expires_in: Int, refresh_token: Option[String], token_type: String)
 
   case class IntrospectResponse(active: Boolean, exp: Option[Int], iat: Option[Int], aud: Option[String], nbf: Option[Int], permissions: Option[Seq[Permissions]])
 
@@ -88,6 +116,9 @@ object AuthorizationService:
 
   case class User(token: String, permissions: Set[Permissions])
 
-  case class ErrorResponse(message: String)
+  case class ErrorResponse(msg: String, statusCode: Int)
+
+
+  case class Resource(name: String, displayName: Option[String], attributes: Map[String, List[String]], uris: Seq[String])
 
 

@@ -1,6 +1,7 @@
 package bio.ferlab.ferload.endpoints
 
 import bio.ferlab.ferload.Config
+import bio.ferlab.ferload.model.{FerloadConfig, KeycloakConfig}
 import cats.effect.IO
 import io.circe.generic.auto.*
 import sttp.tapir.*
@@ -9,9 +10,7 @@ import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*
 import sttp.tapir.server.ServerEndpoint
 object ConfigEndpoint:
-
-  case class FerloadConfig(keycloak: KeycloakConfig)
-  case class KeycloakConfig(url: String, realm: String, @encodedName("client-id") clientId: String, audience: String)
+  
 
   private val configEndpoint: PublicEndpoint[Unit, Unit, FerloadConfig, Any] = endpoint.get
     .in("config")
