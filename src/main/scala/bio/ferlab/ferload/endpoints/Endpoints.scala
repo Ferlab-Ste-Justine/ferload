@@ -4,7 +4,7 @@ import ConfigEndpoint.configServerEndpoint
 import FileEndpoint.{fileServerEndpoint, filesServerEndpoint}
 import Library.*
 import bio.ferlab.ferload.Config
-import bio.ferlab.ferload.services.AuthorizationService
+import bio.ferlab.ferload.services.{AuthorizationService, S3Service}
 import cats.effect.IO
 import io.circe.generic.auto.*
 import org.http4s.client.Client
@@ -36,13 +36,13 @@ object Endpoints:
     .out(jsonBody[List[Book]])
   val booksListingServerEndpoint: ServerEndpoint[Any, IO] = booksListing.serverLogicSuccess(_ => IO.pure(Library.books))
 
-  private def apiEndpoints(config: Config, authorizationService: AuthorizationService): List[ServerEndpoint[Any, IO]] = List(
+  private def apiEndpoints(config: Config, authorizationService: AuthorizationService, s3Service: S3Service): List[ServerEndpoint[Any, IO]] = List(
     helloServerEndpoint,
     booksListingServerEndpoint,
     statusServerEndpoint,
     configServerEndpoint(config),
-    filesServerEndpoint(config, authorizationService),
-    fileServerEndpoint(config, authorizationService)
+    filesServerEndpoint(config, authorizationService, s3Service),
+    fileServerEndpoint(config, authorizationService, s3Service)
   )
 
   private def docEndpoints(apiEndpoints: List[ServerEndpoint[_, IO]]): List[ServerEndpoint[Any, IO]] = SwaggerInterpreter()
@@ -51,8 +51,8 @@ object Endpoints:
   val prometheusMetrics: PrometheusMetrics[IO] = PrometheusMetrics.default[IO]()
   private val metricsEndpoint: ServerEndpoint[Any, IO] = prometheusMetrics.metricsEndpoint
 
-  def all(config: Config, authorizationService: AuthorizationService): List[ServerEndpoint[Any, IO]] = {
-    val api = apiEndpoints(config, authorizationService)
+  def all(config: Config, authorizationService: AuthorizationService, s3Service: S3Service): List[ServerEndpoint[Any, IO]] = {
+    val api = apiEndpoints(config, authorizationService, s3Service)
 
     docEndpoints(api) ++ api ++ List(metricsEndpoint)
   }

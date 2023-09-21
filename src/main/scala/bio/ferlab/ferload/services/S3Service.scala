@@ -38,11 +38,11 @@ class S3Service(s3Config: S3Config) {
 
   private val presignedUrlDuration: Duration = Duration.ofSeconds(s3Config.expirationPresignedUrlInSeconds)
 
-  def presignedUrlDefaultBucket(file: String): IO[URL] =
+  def presignedUrlDefaultBucket(file: String): IO[String] =
     s3Config.defaultBucket.map(presignedUrl(_, file)).getOrElse(IO.raiseError(new IllegalStateException("No default bucket defined in configuration")))
 
 
-  def presignedUrl(bucket: String, file: String): IO[URL] = IO.pure {
+  def presignedUrl(bucket: String, file: String): IO[String] = IO.pure {
 
     val getObjectRequest =
       GetObjectRequest.builder()
@@ -57,7 +57,7 @@ class S3Service(s3Config: S3Config) {
     val presignedGetObjectRequest = presigner.presignGetObject(getObjectPresignRequest)
 
     val url = presignedGetObjectRequest.url()
-    url
+    url.toString
   }
 
 
