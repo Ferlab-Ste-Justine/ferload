@@ -1,9 +1,11 @@
-logs
+# common IDEs to be ignored
+.idea/
+.metals/
+.vscode/
+
+# build tool specific entries
+.bloop
+.bsp
 target
-/.idea
-/.g8
-/.idea_modules
-/.classpath
-/.project
-/.settings
-/RUNNING_PID
+metals.sbt
+project/project
