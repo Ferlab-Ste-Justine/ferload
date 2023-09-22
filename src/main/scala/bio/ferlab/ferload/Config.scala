@@ -1,7 +1,7 @@
 package bio.ferlab.ferload
 
 
-case class Config(auth: AuthConfig, http: HttpConfig, s3Config: S3Config)
+case class Config(auth: AuthConfig, http: HttpConfig, s3Config: S3Config, drsConfig: DrsConfig)
 
 case class S3Config(
                      accessKey: Option[String],
@@ -23,6 +23,35 @@ object S3Config {
       sys.env.get("AWS_PATH_ACCESS_STYLE").exists(_.toBoolean),
       sys.env.get("AWS_REGION"),
       sys.env.get("AWS_PRESIGNED_URL_EXPIRATION_IN_SECONDS").map(_.toInt).getOrElse(3600)
+    )
+  }
+}
+
+case class DrsConfig(
+                      id: String,
+                      name: String,
+                      version: String,
+                      organizationName: String,
+                      organizationUrl: String,
+                      description: Option[String] = None,
+                      contactUrl: Option[String] = None,
+                      documentationUrl: Option[String] = None,
+                      environment: Option[String] = None,
+                    )
+
+object DrsConfig {
+  def load(): DrsConfig = {
+    DrsConfig(
+      sys.env("DRS_ID"),
+      sys.env("DRS_NAME"),
+      sys.env.getOrElse("DRS_VERSION", "1.3.0"),
+      sys.env("DRS_ORGANIZATION_NAME"),
+      sys.env("DRS_ORGANIZATION_URL"),
+      sys.env.get("DRS_DESCRIPTION"),
+      sys.env.get("DRS_CONTACT_URL"),
+      sys.env.get("DRS_DOCUMENTATION_URL"),
+      sys.env.get("DRS_ENVIRONMENT"),
+
     )
   }
 }
@@ -60,7 +89,8 @@ object Config {
         sys.env.get("AUTH_RESOURCES_POLICY_GLOBAL_NAME")
       ),
       HttpConfig.load(),
-      S3Config.load()
+      S3Config.load(),
+      DrsConfig.load()
     )
 
 

@@ -1,8 +1,7 @@
 package bio.ferlab.ferload.endpoints
 
 import bio.ferlab.ferload.Config
-import bio.ferlab.ferload.model.ObjectUrl
-import bio.ferlab.ferload.services.AuthorizationService.{ErrorResponse, User}
+import bio.ferlab.ferload.model.{ErrorResponse, ObjectUrl, User}
 import bio.ferlab.ferload.services.{AuthorizationService, S3Service}
 import cats.effect.IO
 import cats.implicits.*

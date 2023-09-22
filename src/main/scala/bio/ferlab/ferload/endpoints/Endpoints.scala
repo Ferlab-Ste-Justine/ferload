@@ -25,6 +25,7 @@ object Endpoints:
     statusServerEndpoint,
     configServerEndpoint(config),
   ) ++ ObjectsEndpoints.all(config, authorizationService, s3Service)
+    ++ DrsEndpoints.all(config, authorizationService, s3Service)
     ++ LegacyObjectEndpoints.all(config, authorizationService, s3Service)
 
   private def docEndpoints(apiEndpoints: List[ServerEndpoint[_, IO]]): List[ServerEndpoint[Any, IO]] = SwaggerInterpreter()

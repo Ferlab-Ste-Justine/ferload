@@ -1,7 +1,6 @@
 package bio.ferlab.ferload.services
 
 import bio.ferlab.ferload.S3Config
-import cats.effect.IO
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, InstanceProfileCredentialsProvider, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Configuration
@@ -9,7 +8,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 
-import java.net.{URI, URL}
+import java.net.URI
 import java.time.Duration
 import scala.util.{Failure, Success, Try}
 

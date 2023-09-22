@@ -1,7 +1,8 @@
 package bio.ferlab.ferload.endpoints
 
-import bio.ferlab.ferload.endpoints.ConfigEndpoint.{FerloadConfig, KeycloakConfig, configServerEndpoint}
-import bio.ferlab.ferload.{AuthConfig, Config, HttpConfig, S3Config}
+import bio.ferlab.ferload.endpoints.ConfigEndpoint.configServerEndpoint
+import bio.ferlab.ferload.model.{FerloadConfig, KeycloakConfig}
+import bio.ferlab.ferload.{AuthConfig, Config, DrsConfig, HttpConfig, S3Config}
 import cats.effect.IO
 import io.circe.generic.auto.*
 import org.scalatest.EitherValues
@@ -17,7 +18,11 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
 
   "config" should "return expected config" in {
     //given
-    val config = Config(AuthConfig("http://localhost:8080", "realm", "clientId", "clientSecret", "audience", None), HttpConfig("localhost", 9090), S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600))
+    val config = Config(
+      AuthConfig("http://localhost:8080", "realm", "clientId", "clientSecret", "audience", None),
+      HttpConfig("localhost", 9090),
+      S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600),
+      DrsConfig("ferlaod", "Ferload", "1.3.0", "Ferlab", "https://ferlab.bio"))
     val backendStub = TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
       .whenServerEndpointRunLogic(configServerEndpoint(config))
       .backend()

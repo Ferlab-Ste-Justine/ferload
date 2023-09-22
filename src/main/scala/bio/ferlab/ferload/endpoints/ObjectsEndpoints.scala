@@ -2,17 +2,16 @@ package bio.ferlab.ferload.endpoints
 
 import bio.ferlab.ferload.Config
 import bio.ferlab.ferload.endpoints.SecuredEndpoint.baseEndpoint
-import bio.ferlab.ferload.model.ObjectUrl
-import bio.ferlab.ferload.services.AuthorizationService.{ErrorResponse, User}
+import bio.ferlab.ferload.model.{ErrorResponse, ObjectUrl, Resource, User}
 import bio.ferlab.ferload.services.{AuthorizationService, S3Service}
 import cats.effect.IO
 import cats.implicits.*
-import io.circe.generic.auto.*
 import sttp.model.StatusCode
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*
 import sttp.tapir.server.*
+import io.circe.generic.auto.*
 
 object ObjectsEndpoints:
 
@@ -55,7 +54,7 @@ object ObjectsEndpoints:
     def listObjectsServer(authorizationService: AuthorizationService, s3Service: S3Service): ServerEndpoint[Any, IO] =
       listObjects(authorizationService).serverLogicSuccess { user =>
         _ =>
-          val resourcesIO: IO[List[AuthorizationService.Resource]] = user.permissions.toList.traverse(p => authorizationService.getResourceById(p.resource_id))
+          val resourcesIO: IO[List[Resource]] = user.permissions.toList.traverse(p => authorizationService.getResourceById(p.resource_id))
           resourcesIO.map { resources =>
             val urls: Seq[(String, (String, String))] = resources.flatMap(r => S3Service.parseS3Urls(r.uris).toOption.map(r.name -> _))
             val m: Map[String, String] = urls.map { case (name, (bucket, path)) => name -> s3Service.presignedUrl(bucket, path) }.toMap
@@ -73,7 +72,8 @@ object ObjectsEndpoints:
   object ByPath:
     private def byPathEndpoint(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, User, Unit, (StatusCode, ErrorResponse), Unit, Any, IO] =
       baseEndpoint
-        .securityIn("objectsByPath")
+        .securityIn("objects")
+        .securityIn("bypath")
         .serverSecurityLogic(token => authorizationService.authLogic(token, Seq(resourceGlobalName)))
 
     private def singleObject(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, User, String, (StatusCode, ErrorResponse), ObjectUrl, Any, IO] =
@@ -119,5 +119,5 @@ object ObjectsEndpoints:
     }
 
   def all(config: Config, authorizationService: AuthorizationService, s3Service: S3Service): Seq[ServerEndpoint[Any, IO]] =
-    ById.all(authorizationService, s3Service) ++ ByPath.all(config, authorizationService, s3Service)
+    ByPath.all(config, authorizationService, s3Service) ++ ById.all(authorizationService, s3Service)
 

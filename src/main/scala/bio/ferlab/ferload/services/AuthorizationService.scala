@@ -1,7 +1,7 @@
 package bio.ferlab.ferload.services
 
 import bio.ferlab.ferload.AuthConfig
-import bio.ferlab.ferload.services.AuthorizationService.{ErrorResponse, IntrospectResponse, PartyToken, Resource, User}
+import bio.ferlab.ferload.model.*
 import cats.effect.IO
 import io.circe.Error
 import io.circe.generic.auto.*
@@ -52,7 +52,7 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
       partyToken <- requestPartyToken(token, resources)
       permissionToken <- introspectPartyToken(partyToken)
     } yield {
-      val value: Set[AuthorizationService.Permissions] = permissionToken.permissions.map(_.toSet).getOrElse(Set.empty)
+      val value: Set[Permissions] = permissionToken.permissions.map(_.toSet).getOrElse(Set.empty)
       User(partyToken, value)
     }
 
@@ -62,7 +62,7 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
       }
       .recover {
         case HttpError(_, statusCode) if Seq(StatusCode.Unauthorized, StatusCode.Forbidden).contains(statusCode) => Left((statusCode, ErrorResponse("Unauthorized", statusCode.code))).withRight[User]
-        case e: HttpError[String] if e.statusCode == StatusCode.BadRequest && e.body.contains("invalid_resource")  => Left((StatusCode.NotFound, ErrorResponse("Not Found", 404))).withRight[User]
+        case e: HttpError[String] if e.statusCode == StatusCode.BadRequest && e.body.contains("invalid_resource") => Left((StatusCode.NotFound, ErrorResponse("Not Found", 404))).withRight[User]
       }
 
   }
@@ -85,7 +85,16 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
 
   }
 
-  private def requestClientToken(): IO[PartyToken] = {
+  def existResource(id: String, token: String): IO[StatusCode] = {
+
+    val auth: IO[Response[Either[String, String]]] = basicRequest.get(uri"$baseUri/authz/protection/resource_set/$id")
+      .auth.bearer(token)
+      .send(backend)
+    auth.map(r => r.code)
+
+  }
+
+  def requestClientToken(): IO[PartyToken] = {
     val body: Seq[(String, String)] = Seq(
       "client_id" -> authConfig.clientId,
       "client_secret" -> authConfig.clientSecret,
@@ -99,7 +108,7 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
     auth.flatMap(r => IO.fromEither(r.body))
   }
 
-  private def containAllPermissions(resources: Seq[String], permissions: Set[AuthorizationService.Permissions]): Boolean = {
+  private def containAllPermissions(resources: Seq[String], permissions: Set[Permissions]): Boolean = {
     resources.forall(r => {
       val resourceInPermissions = permissions.flatMap(_.rsname)
       resourceInPermissions.contains(r)
@@ -107,18 +116,7 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
   }
 }
 
-object AuthorizationService:
-  case class PartyToken(access_token: String, expires_in: Int, refresh_expires_in: Int, refresh_token: Option[String], token_type: String)
-
-  case class IntrospectResponse(active: Boolean, exp: Option[Int], iat: Option[Int], aud: Option[String], nbf: Option[Int], permissions: Option[Seq[Permissions]])
-
-  case class Permissions(resource_id: String, rsname: Option[String], resource_scopes: Seq[String])
-
-  case class User(token: String, permissions: Set[Permissions])
-
-  case class ErrorResponse(msg: String, statusCode: Int)
 
 
-  case class Resource(name: String, displayName: Option[String], attributes: Map[String, List[String]], uris: Seq[String])
 
 
