@@ -3,6 +3,7 @@ package bio.ferlab.ferload.services
 import bio.ferlab.ferload.AuthConfig
 import bio.ferlab.ferload.model.*
 import cats.effect.IO
+import com.github.benmanes.caffeine.cache.{AsyncCacheLoader, AsyncLoadingCache, Caffeine, Expiry}
 import io.circe.Error
 import io.circe.generic.auto.*
 import sttp.capabilities.fs2.Fs2Streams
@@ -12,7 +13,11 @@ import sttp.model
 import sttp.model.MediaType.ApplicationXWwwFormUrlencoded
 import sttp.model.StatusCode
 
+import java.util.concurrent.Executor
+import scala.concurrent.ExecutionContext
+
 class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2Streams[IO]]) {
+
 
   private val baseUri = s"${authConfig.authUrl}/realms/${authConfig.realm}"
 
@@ -69,7 +74,7 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
 
   def getResourceById(id: String): IO[Resource] = {
     for {
-      token <- requestClientToken()
+      token <- clientToken()
       resource <- fetchResourceById(id, token.access_token)
     } yield resource
 
@@ -94,7 +99,7 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
 
   }
 
-  def requestClientToken(): IO[PartyToken] = {
+  private def requestClientToken(): IO[PartyToken] = {
     val body: Seq[(String, String)] = Seq(
       "client_id" -> authConfig.clientId,
       "client_secret" -> authConfig.clientSecret,
@@ -107,6 +112,32 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
       .send(backend)
     auth.flatMap(r => IO.fromEither(r.body))
   }
+
+  private val cacheLoader: AsyncCacheLoader[String, PartyToken] = (key: String, executor: Executor) => {
+    import cats.effect.unsafe.implicits.global
+    requestClientToken().evalOn(ExecutionContext.fromExecutor(executor)).unsafeToCompletableFuture()
+  }
+
+  private val expiry = new Expiry[String, PartyToken]() {
+    override def expireAfterCreate(key: String, value: PartyToken, currentTime: Long): Long = {
+      val d = value.expires_in * 1E9 - 5 * 1E9
+      d.toLong
+    }
+
+    override def expireAfterUpdate(key: String, value: PartyToken, currentTime: Long, currentDuration: Long): Long = {
+      currentDuration
+    }
+
+    override def expireAfterRead(key: String, value: PartyToken, currentTime: Long, currentDuration: Long): Long = {
+      currentDuration
+    }
+
+  }
+  val cache: AsyncLoadingCache[String, PartyToken] = Caffeine.newBuilder()
+    .expireAfter(expiry)
+    .buildAsync(cacheLoader)
+
+  def clientToken(): IO[PartyToken] = IO.fromCompletableFuture(IO(cache.get("client_token")))
 
   private def containAllPermissions(resources: Seq[String], permissions: Set[Permissions]): Boolean = {
     resources.forall(r => {

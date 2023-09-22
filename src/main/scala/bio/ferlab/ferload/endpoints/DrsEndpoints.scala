@@ -60,7 +60,9 @@ object DrsEndpoints:
 
   private def objectInfoServer(config: Config, authorizationService: AuthorizationService) = objectInfo.serverLogic { objectId =>
     for {
-      token <- authorizationService.requestClientToken()
+      token <- authorizationService.clientToken()
+      _ <- IO.println(token.expires_in)
+      _ <- IO.println(token.access_token)
       existResource <- authorizationService.existResource(objectId, token.access_token)
 
     } yield existResource match {
