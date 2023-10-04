@@ -1,6 +1,5 @@
 package bio.ferlab.ferload
 
-
 case class Config(auth: AuthConfig, http: HttpConfig, s3Config: S3Config, drsConfig: DrsConfig)
 
 case class S3Config(
@@ -59,8 +58,8 @@ object DrsConfig {
 case class HttpConfig(host: String, port: Int)
 
 object HttpConfig {
-  val DEFAULT_PORT = 9090
-  val DEFAULT_HOST = "localhost"
+  private val DEFAULT_PORT = 9090
+  private val DEFAULT_HOST = "localhost"
 
   def load(): HttpConfig = {
     val port = sys.env
@@ -73,7 +72,9 @@ object HttpConfig {
   }
 }
 
-case class AuthConfig(authUrl: String, realm: String, clientId: String, clientSecret: String, audience: String, resourcesGlobalName: Option[String])
+case class AuthConfig(authUrl: String, realm: String, clientId: String, clientSecret: String, audience: String, resourcesGlobalName: Option[String]) {
+  val baseUri = s"$authUrl/realms/$realm"
+}
 
 
 object Config {
@@ -93,6 +94,6 @@ object Config {
       DrsConfig.load()
     )
 
-
   }
 }
+

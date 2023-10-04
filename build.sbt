@@ -23,6 +23,8 @@ lazy val rootProject = (project in file(".")).settings(
       "software.amazon.awssdk" % "s3" % "2.20.150",
       "com.github.ben-manes.caffeine" % "caffeine" % "3.1.8",
       "com.softwaremill.sttp.tapir" %% "tapir-sttp-stub-server" % tapirVersion % Test,
+      "com.softwaremill.sttp.tapir" %% "tapir-sttp-client" % "1.7.5" % Test,
+      "com.softwaremill.sttp.tapir" %% "tapir-http4s-client" % "1.7.5" % Test,
       "org.scalatest" %% "scalatest" % "3.2.17" % Test,
     )
   )

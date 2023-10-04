@@ -2,8 +2,8 @@ package bio.ferlab.ferload.endpoints
 
 import bio.ferlab.ferload.Config
 import bio.ferlab.ferload.endpoints.SecuredEndpoint.baseEndpoint
-import bio.ferlab.ferload.model.{ErrorResponse, ObjectUrl, Resource, User}
-import bio.ferlab.ferload.services.{AuthorizationService, S3Service}
+import bio.ferlab.ferload.model.{ErrorResponse, ObjectUrl, ReadResource, User}
+import bio.ferlab.ferload.services.{AuthorizationService, ResourceService, S3Service}
 import cats.effect.IO
 import cats.implicits.*
 import sttp.model.StatusCode
@@ -38,11 +38,11 @@ object ObjectsEndpoints:
         .example(Map("FI1" -> "https://file1.vcf", "FI2" -> "https://file2.vcf")))
 
 
-    def singleObjectServer(authorizationService: AuthorizationService, s3Service: S3Service): ServerEndpoint[Any, IO] =
+    def singleObjectServer(authorizationService: AuthorizationService, resourceService: ResourceService, s3Service: S3Service): ServerEndpoint[Any, IO] =
       singleObject(authorizationService).serverLogicSuccess { user =>
         _ =>
           for {
-            resource <- authorizationService.getResourceById(user.permissions.head.resource_id)
+            resource <- resourceService.getResourceById(user.permissions.head.resource_id)
             bucketAndPath <- IO.fromTry(S3Service.parseS3Urls(resource.uris))
             (bucket, path) = bucketAndPath
             url = s3Service.presignedUrl(bucket, path)
@@ -51,10 +51,10 @@ object ObjectsEndpoints:
       }
 
 
-    def listObjectsServer(authorizationService: AuthorizationService, s3Service: S3Service): ServerEndpoint[Any, IO] =
+    def listObjectsServer(authorizationService: AuthorizationService, resourceService: ResourceService, s3Service: S3Service): ServerEndpoint[Any, IO] =
       listObjects(authorizationService).serverLogicSuccess { user =>
         _ =>
-          val resourcesIO: IO[List[Resource]] = user.permissions.toList.traverse(p => authorizationService.getResourceById(p.resource_id))
+          val resourcesIO: IO[List[ReadResource]] = user.permissions.toList.traverse(p => resourceService.getResourceById(p.resource_id))
           resourcesIO.map { resources =>
             val urls: Seq[(String, (String, String))] = resources.flatMap(r => S3Service.parseS3Urls(r.uris).toOption.map(r.name -> _))
             val m: Map[String, String] = urls.map { case (name, (bucket, path)) => name -> s3Service.presignedUrl(bucket, path) }.toMap
@@ -64,9 +64,9 @@ object ObjectsEndpoints:
 
       }
 
-    def all(authorizationService: AuthorizationService, s3Service: S3Service): Seq[ServerEndpoint[Any, IO]] = List(
-      singleObjectServer(authorizationService, s3Service),
-      listObjectsServer(authorizationService, s3Service)
+    def all(authorizationService: AuthorizationService, resourceService: ResourceService, s3Service: S3Service): Seq[ServerEndpoint[Any, IO]] = List(
+      singleObjectServer(authorizationService, resourceService, s3Service),
+      listObjectsServer(authorizationService, resourceService, s3Service)
     )
 
   object ByPath:
@@ -118,6 +118,6 @@ object ObjectsEndpoints:
 
     }
 
-  def all(config: Config, authorizationService: AuthorizationService, s3Service: S3Service): Seq[ServerEndpoint[Any, IO]] =
-    ByPath.all(config, authorizationService, s3Service) ++ ById.all(authorizationService, s3Service)
+  def all(config: Config, authorizationService: AuthorizationService, resourceService: ResourceService, s3Service: S3Service): Seq[ServerEndpoint[Any, IO]] =
+    ByPath.all(config, authorizationService, s3Service) ++ ById.all(authorizationService, resourceService, s3Service)
 

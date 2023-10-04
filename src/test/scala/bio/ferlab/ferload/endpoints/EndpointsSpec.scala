@@ -1,6 +1,7 @@
 package bio.ferlab.ferload.endpoints
 
 import bio.ferlab.ferload.endpoints.Endpoints.statusServerEndpoint
+import bio.ferlab.ferload.unwrap
 import cats.effect.IO
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec

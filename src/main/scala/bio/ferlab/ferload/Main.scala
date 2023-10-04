@@ -1,7 +1,7 @@
 package bio.ferlab.ferload
 
 import bio.ferlab.ferload.endpoints.Endpoints
-import bio.ferlab.ferload.services.{AuthorizationService, S3Service}
+import bio.ferlab.ferload.services.{AuthorizationService, ResourceService, S3Service}
 import cats.effect.{ExitCode, IO, IOApp}
 import com.comcast.ip4s.{Host, Port}
 import org.http4s.client.middleware.Logger
@@ -29,8 +29,9 @@ object Main extends IOApp:
       finalClient = Logger(logHeaders = true, logBody = true)(client)
       backend = Http4sBackend.usingClient(client)
       authorizationService = new AuthorizationService(config.auth, backend)
+      resourceService = new ResourceService(config.auth, backend)
       s3Service = new S3Service(config.s3Config)
-      routes = Http4sServerInterpreter[IO](serverOptions).toRoutes(Endpoints.all(config, authorizationService, s3Service))
+      routes = Http4sServerInterpreter[IO](serverOptions).toRoutes(Endpoints.all(config, authorizationService, resourceService, s3Service))
       _ <- EmberServerBuilder
         .default[IO]
         .withHost(Host.fromString(config.http.host).get)

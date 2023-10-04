@@ -1,12 +1,14 @@
 package bio.ferlab.ferload.endpoints
 
-import bio.ferlab.ferload.{Config, DrsConfig}
 import bio.ferlab.ferload.model.ErrorResponse
 import bio.ferlab.ferload.model.drs.*
-import bio.ferlab.ferload.services.{AuthorizationService, S3Service}
+import bio.ferlab.ferload.model.drs.CreateDrsObject.toResource
+import bio.ferlab.ferload.services.{AuthorizationService, ResourceService, S3Service}
+import bio.ferlab.ferload.{Config, DrsConfig}
 import cats.effect.IO
 import cats.implicits.*
 import io.circe.generic.auto.*
+import sttp.client3.HttpError
 import sttp.model.StatusCode
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
@@ -42,7 +44,6 @@ object DrsEndpoints:
     ).pure[IO]
   )
 
-
   private def objectInfo: Endpoint[Unit, String, (StatusCode, ErrorResponse), Authorizations, Any] =
     objectEnpoint.in(path[String].name("object_id"))
       .options
@@ -58,13 +59,18 @@ object DrsEndpoints:
       .get
       .out(jsonBody[DrsObject])
 
-  private def objectInfoServer(config: Config, authorizationService: AuthorizationService) = objectInfo.serverLogic { objectId =>
-    for {
-      token <- authorizationService.clientToken()
-      _ <- IO.println(token.expires_in)
-      _ <- IO.println(token.access_token)
-      existResource <- authorizationService.existResource(objectId, token.access_token)
+  private val createObject: Endpoint[Unit, (String, CreateDrsObject), (StatusCode, ErrorResponse), StatusCode, Any] =
+    baseEndpoint
+      .in("object")
+      .in(auth.bearer[String]())
+      .in(jsonBody[CreateDrsObject])
+      .errorOut(statusCode.and(jsonBody[ErrorResponse]))
+      .out(statusCode)
+      .post
 
+  private def objectInfoServer(config: Config, resourceService: ResourceService) = objectInfo.serverLogic { objectId =>
+    for {
+      existResource <- resourceService.existResource(objectId)
     } yield existResource match {
       case StatusCode.Ok => Right(Authorizations(Some(List("BearerAuth")), None, Some(List(s"${config.auth.authUrl}/realms/${config.auth.realm}"))))
       case StatusCode.NotFound => Left((StatusCode.NotFound, ErrorResponse(s"Object $objectId not found", 404)))
@@ -72,15 +78,30 @@ object DrsEndpoints:
     }
   }
 
-  private def getObjectServer(config: Config, authorizationService: AuthorizationService, s3Service: S3Service) = getObject(authorizationService).serverLogicSuccess { user =>
+  private def getObjectServer(config: Config, authorizationService: AuthorizationService, resourceService: ResourceService, s3Service: S3Service) = getObject(authorizationService).serverLogicSuccess { user =>
     _ =>
       for {
-        resource <- authorizationService.getResourceById(user.permissions.head.resource_id)
+        resource <- resourceService.getResourceById(user.permissions.head.resource_id)
         bucketAndPath <- IO.fromTry(S3Service.parseS3Urls(resource.uris))
         (bucket, path) = bucketAndPath
         url = s3Service.presignedUrl(bucket, path)
       } yield DrsObject.build(resource, url, config.http.host)
   }
 
+  private def createObjectServer(config: Config, resourceService: ResourceService) = createObject.serverLogicSuccess { (token, createDrsObject) =>
+    val existResources = resourceService.existResource(createDrsObject.id)
+    existResources.flatMap {
+      case StatusCode.Ok => resourceService.updateResource(token, toResource(createDrsObject))
+      case StatusCode.NotFound => resourceService.createResource(token, toResource(createDrsObject))
+      case e => IO.raiseError(new IllegalStateException(s"Unexpected status code: $e"))
+    }
 
-  def all(config: Config, authorizationService: AuthorizationService, s3Service: S3Service): Seq[ServerEndpoint[Any, IO]] = Seq(serviceServer(config.drsConfig), objectInfoServer(config, authorizationService), getObjectServer(config, authorizationService, s3Service))
+
+  }
+
+  def all(config: Config, authorizationService: AuthorizationService, resourceService: ResourceService, s3Service: S3Service): Seq[ServerEndpoint[Any, IO]] = Seq(
+    serviceServer(config.drsConfig),
+    objectInfoServer(config, resourceService),
+    getObjectServer(config, authorizationService, resourceService, s3Service),
+    createObjectServer(config, resourceService)
+  )

@@ -1,6 +1,6 @@
 package bio.ferlab.ferload.model.drs
 
-import bio.ferlab.ferload.model.Resource
+import bio.ferlab.ferload.model.ReadResource
 
 import java.time.LocalDateTime
 
@@ -36,12 +36,8 @@ case class DrsObject(
                     )
 
 object DrsObject {
-  def build(resource: Resource, presignedUrl: String, host:String): DrsObject = {
+  def build(resource: ReadResource, presignedUrl: String, host: String): DrsObject = {
 
-    val checksums = resource.attributes.getOrElse("checksum", Nil).map { checksum =>
-      val parts = checksum.split(":")
-      Checksum(checksum = parts.last, `type` = parts.head)
-    }
     val accessMethods = AccessMethod(
       `type` = "https",
       access_url = Some(AccessURL(
@@ -53,6 +49,16 @@ object DrsObject {
       authorizations = None
 
     )
+    build(resource, host).copy(access_methods = Some(List(accessMethods)))
+
+  }
+
+  def build(resource: ReadResource, host: String): DrsObject = {
+
+    val checksums = resource.attributes.getOrElse("checksum", Nil).map { checksum =>
+      val parts = checksum.split(":")
+      Checksum(checksum = parts.last, `type` = parts.head)
+    }
 
     DrsObject(
       id = resource.name,
@@ -64,14 +70,14 @@ object DrsObject {
       version = firstAttribute(resource, "version"),
       mime_type = firstAttribute(resource, "mime_type"),
       checksums = checksums,
-      access_methods = Some(List(accessMethods)),
+      access_methods = None,
       contents = None,
       description = firstAttribute(resource, "description"),
       aliases = resource.attributes.get("aliases")
     )
   }
 
-  private def firstAttribute(resource: Resource, key: String): Option[String] = {
+  private def firstAttribute(resource: ReadResource, key: String): Option[String] = {
     resource.attributes.get(key).flatMap(_.headOption)
   }
 }

@@ -2,7 +2,7 @@ package bio.ferlab.ferload.endpoints
 
 import bio.ferlab.ferload.endpoints.ConfigEndpoint.configServerEndpoint
 import bio.ferlab.ferload.model.{FerloadConfig, KeycloakConfig}
-import bio.ferlab.ferload.{AuthConfig, Config, DrsConfig, HttpConfig, S3Config}
+import bio.ferlab.ferload.{AuthConfig, Config, DrsConfig, HttpConfig, S3Config, unwrap}
 import cats.effect.IO
 import io.circe.generic.auto.*
 import org.scalatest.EitherValues
