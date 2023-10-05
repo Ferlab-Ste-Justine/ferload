@@ -23,5 +23,4 @@ sbt run # run the application (Main)
 
 * [tapir documentation](https://tapir.softwaremill.com/en/latest/)
 * [tapir github](https://github.com/softwaremill/tapir)
-* [bootzooka: template microservice using tapir](https://softwaremill.github.io/bootzooka/)
 * [sbtx wrapper](https://github.com/dwijnand/sbt-extras#installation)
