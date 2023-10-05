@@ -1,9 +1,5 @@
-FROM adoptopenjdk/openjdk11:alpine-jre
+FROM amazoncorretto:17-alpine3.18
 
-RUN apk update && apk add bash ca-certificates openssl
+COPY target/scala-3.3.1/ferload.jar .
 
-COPY target/universal/ferload.tgz .
-
-RUN tar xvf ferload.tgz
-
-ENTRYPOINT ["/ferload/bin/ferload"]
+ENTRYPOINT ["java", "-jar", "ferload.jar"]

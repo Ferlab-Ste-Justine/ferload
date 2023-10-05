@@ -1,3 +1,5 @@
+
+
 resolvers += "Sonatype Releases" at "https://s01.oss.sonatype.org/content/repositories/releases/"
 val tapirVersion = "1.7.3"
 val http4sVersion = "0.23.23"
@@ -9,6 +11,14 @@ lazy val rootProject = (project in file(".")).settings(
     version := "0.1.0-SNAPSHOT",
     organization := "bio.ferlab",
     scalaVersion := "3.3.1",
+    assembly / assemblyJarName := "ferload.jar",
+    assembly / assemblyMergeStrategy:= {
+      case PathList("META-INF", "mailcap") => MergeStrategy.first
+      case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.first
+      case PathList("META-INF", "maven", "org.webjars", "swagger-ui", "pom.properties") => MergeStrategy.first
+      case PathList("module-info.class") => MergeStrategy.discard
+      case x => MergeStrategy.defaultMergeStrategy(x)
+    },
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
       "org.http4s" %% "http4s-ember-server" % http4sVersion,
@@ -27,6 +37,7 @@ lazy val rootProject = (project in file(".")).settings(
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-client" % "1.7.5" % Test,
       "org.scalatest" %% "scalatest" % "3.2.17" % Test,
     )
+
   )
 )
 
