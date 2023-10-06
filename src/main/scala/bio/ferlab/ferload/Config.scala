@@ -61,7 +61,7 @@ case class HttpConfig(host: String, port: Int)
 
 object HttpConfig {
   private val DEFAULT_PORT = 9090
-  private val DEFAULT_HOST = "localhost"
+  private val DEFAULT_HOST = "0.0.0.0"
 
   def load(): HttpConfig = {
     val port = sys.env
