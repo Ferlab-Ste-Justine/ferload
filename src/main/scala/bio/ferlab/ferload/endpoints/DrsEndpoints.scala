@@ -85,7 +85,7 @@ object DrsEndpoints:
         bucketAndPath <- IO.fromTry(S3Service.parseS3Urls(resource.uris))
         (bucket, path) = bucketAndPath
         url = s3Service.presignedUrl(bucket, path)
-      } yield DrsObject.build(resource, url, config.http.host)
+      } yield DrsObject.build(resource, url, config.drsConfig.selfHost)
   }
 
   private def createObjectServer(config: Config, resourceService: ResourceService) = createObject.serverLogicSuccess { (token, createDrsObject) =>

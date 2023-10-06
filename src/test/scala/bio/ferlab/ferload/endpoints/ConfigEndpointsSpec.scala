@@ -22,7 +22,7 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       AuthConfig("http://localhost:8080", "realm", "clientId", "clientSecret", "audience", None),
       HttpConfig("localhost", 9090),
       S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600),
-      DrsConfig("ferlaod", "Ferload", "1.3.0", "Ferlab", "https://ferlab.bio"))
+      DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio"))
     val backendStub = TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
       .whenServerEndpointRunLogic(configServerEndpoint(config))
       .backend()
