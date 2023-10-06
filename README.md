@@ -66,7 +66,7 @@ DRS Information :
 - `DRS_ID` : DRS Server ID.
 - `DRS_NAME` : DRS Name.
 - `DRS_ORGANIZATION_NAME` : DRS Organization.
-- `DRS_ORGANIZATION_URL` : https://ferload.bio;
+- `DRS_ORGANIZATION_URL` : DRS Organization url. 
 - `DRS_SELF_HOST` : DRS self host, used in `self_uri` property of `DrsObject`. 
 - `DRS_VERSION` : DRS Version. Default 1.3.0
 - `DRS_CONTACT_URL` : DRS contact url. Can be empty.
