@@ -46,7 +46,7 @@ object LegacyObjectEndpoints:
       file => s3Service.presignedUrl(defaultBucket, file.mkString("/")).pure[IO].map(ObjectUrl.apply)
     }
 
-  def objectsByPathServerEndpoint(authorizationService: AuthorizationService, s3Service: S3Service, resourceGlobalName: String, defaultBucket: String): ServerEndpoint[Any, IO] =
+  def listObjectsByPathServer(authorizationService: AuthorizationService, s3Service: S3Service, resourceGlobalName: String, defaultBucket: String): ServerEndpoint[Any, IO] =
     objectsByPaths(authorizationService, resourceGlobalName).serverLogicSuccess { user =>
       files =>
         files.split("\n")
@@ -59,8 +59,8 @@ object LegacyObjectEndpoints:
       b <- config.s3Config.defaultBucket
       r <- config.auth.resourcesGlobalName
       servers = List(
-        objectByPathServer(authorizationService, s3Service, r, b),
-        objectsByPathServerEndpoint(authorizationService, s3Service, r, b)
+        listObjectsByPathServer(authorizationService, s3Service, r, b),
+        objectByPathServer(authorizationService, s3Service, r, b)
       )
     } yield servers
     s.getOrElse(Nil)

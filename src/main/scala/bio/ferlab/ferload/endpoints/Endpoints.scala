@@ -2,7 +2,7 @@ package bio.ferlab.ferload.endpoints
 
 import bio.ferlab.ferload.Config
 import bio.ferlab.ferload.endpoints.ConfigEndpoint.configServerEndpoint
-import bio.ferlab.ferload.endpoints.LegacyObjectEndpoints.{objectByPathServer, objectsByPathServerEndpoint}
+import bio.ferlab.ferload.endpoints.LegacyObjectEndpoints.{objectByPathServer, listObjectsByPathServer}
 import bio.ferlab.ferload.endpoints.ObjectsEndpoints.ById.singleObjectServer
 import bio.ferlab.ferload.services.{AuthorizationService, ResourceService, S3Service}
 import cats.effect.IO

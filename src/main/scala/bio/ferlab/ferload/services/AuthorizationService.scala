@@ -74,7 +74,6 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
    * @return the user with permissions if the token is valid and if user have access to the resources. Otherwise, return errors (Unauthorized, Forbidden, NotFound).
    */
   def authLogic(token: String, resources: Seq[String]): IO[Either[(StatusCode, ErrorResponse), User]] = {
-    val data = requestPartyToken(token, resources)
     val r: IO[User] = for {
       partyToken <- requestPartyToken(token, resources)
       permissionToken <- introspectPartyToken(partyToken)
