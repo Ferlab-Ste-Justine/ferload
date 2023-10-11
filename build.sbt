@@ -5,6 +5,7 @@ val tapirVersion = "1.7.3"
 val http4sVersion = "0.23.23"
 val sstpVersion = "3.9.0"
 scalacOptions ++= Seq("-Xmax-inlines", "100")
+javacOptions ++= Seq("-source", "17", "-target", "17")
 lazy val rootProject = (project in file(".")).settings(
   Seq(
     name := "ferload",
