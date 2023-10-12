@@ -8,4 +8,4 @@ case class FerloadConfig(method: String, keycloak: Option[KeycloakConfig], token
 
 case class KeycloakConfig(url: String, realm: String, `client-id`: String, audience: String)
 
-case class TokenConfig(`client-id`: String, link: String, helper: Option[String])
+case class TokenConfig(realm:String, `client-id`: String, link: String, helper: Option[String])
