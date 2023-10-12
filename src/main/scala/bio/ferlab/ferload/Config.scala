@@ -86,7 +86,7 @@ object FerloadClientConfig {
   def load(): FerloadClientConfig = {
     val f = FerloadClientConfig(
       sys.env.getOrElse("FERLOAD_CLIENT_METHOD", "token"),
-      sys.env.get("FERLOAD_CLIENT_ID"),
+      sys.env.get("FERLOAD_CLIENT_CLIENT_ID"),
       sys.env.get("FERLOAD_CLIENT_TOKEN_LINK"),
       sys.env.get("FERLOAD_CLIENT_TOKEN_HELPER")
     )
@@ -108,7 +108,7 @@ object Config {
         sys.env("AUTH_URL"),
         sys.env("AUTH_REALM"),
         sys.env("AUTH_CLIENT_ID"),
-        sys.env("AUTH_SECRET_KEY"),
+        sys.env("AUTH_CLIENT_SECRET"),
         sys.env.get("AUTH_RESOURCES_POLICY_GLOBAL_NAME")
       ),
       HttpConfig.load(),
