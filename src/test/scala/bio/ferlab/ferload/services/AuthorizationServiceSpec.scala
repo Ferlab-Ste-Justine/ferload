@@ -19,7 +19,7 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
       .whenRequestMatches(_ => true)
       .thenRespond(""" {"access_token": "E123456", "expires_in": 65, "refresh_expires_in": 0, "token_type" : "bearer"} """)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", "audience", None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None)
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
     authorizationService.requestPartyToken("https://ferlab.bio", Seq("FI1")).unwrap shouldBe "E123456"
     testingBackend.allInteractions.size shouldBe 1
@@ -34,7 +34,7 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
       .whenRequestMatches(_ => true)
       .thenRespond(""" {"error": "invalid_token"}""", statusCode = StatusCode.Forbidden)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", "audience", None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None)
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
     a[HttpError[_]] should be thrownBy {
       authorizationService.requestPartyToken("https://ferlab.bio", Seq("FI1")).unwrap
@@ -66,7 +66,7 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           |} """.stripMargin)
     )
 
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", "audience", None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
     val resp = authorizationService.introspectPartyToken("E123456").unwrap
@@ -97,7 +97,7 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           |} """.stripMargin)
     )
 
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", "audience", None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
@@ -128,7 +128,7 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           |} """.stripMargin)
     )
 
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", "audience", None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
@@ -161,7 +161,7 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           | ]
           |} """.stripMargin)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", "audience", None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
@@ -195,7 +195,7 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           | ]
           |} """.stripMargin)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", "audience", None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
@@ -229,7 +229,7 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           | ]
           |} """.stripMargin)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", "audience", None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 

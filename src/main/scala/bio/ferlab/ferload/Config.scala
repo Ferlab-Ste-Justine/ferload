@@ -1,6 +1,6 @@
 package bio.ferlab.ferload
 
-case class Config(auth: AuthConfig, http: HttpConfig, s3Config: S3Config, drsConfig: DrsConfig)
+case class Config(auth: AuthConfig, http: HttpConfig, s3Config: S3Config, drsConfig: DrsConfig, ferloadClientConfig: FerloadClientConfig)
 
 case class S3Config(
                      accessKey: Option[String],
@@ -74,10 +74,31 @@ object HttpConfig {
   }
 }
 
-case class AuthConfig(authUrl: String, realm: String, clientId: String, clientSecret: String, audience: String, resourcesGlobalName: Option[String]) {
+case class AuthConfig(authUrl: String, realm: String, clientId: String, clientSecret: String, resourcesGlobalName: Option[String]) {
   val baseUri = s"$authUrl/realms/$realm"
 }
 
+case class FerloadClientConfig(method: String, clientId: Option[String], tokenLink: Option[String], tokenHelper: Option[String])
+
+object FerloadClientConfig {
+  val TOKEN: String = "token"
+  val PASSWORD: String = "password"
+  def load(): FerloadClientConfig = {
+    val f = FerloadClientConfig(
+      sys.env.getOrElse("FERLOAD_CLIENT_METHOD", "token"),
+      sys.env.get("FERLOAD_CLIENT_ID"),
+      sys.env.get("FERLOAD_CLIENT_TOKEN_LINK"),
+      sys.env.get("FERLOAD_CLIENT_TOKEN_HELPER")
+    )
+    if (f.method != TOKEN && f.method != PASSWORD) {
+      throw new IllegalArgumentException(s"FERLOAD_CLIENT_METHOD must be $TOKEN or $PASSWORD")
+    }
+    if (f.method == TOKEN && f.tokenLink.isEmpty) {
+      throw new IllegalArgumentException(s"FERLOAD_CLIENT_TOKEN_LINK must be set when FERLOAD_CLIENT_METHOD is $TOKEN")
+    }
+    f
+  }
+}
 
 object Config {
   def load(): Config = {
@@ -88,12 +109,12 @@ object Config {
         sys.env("AUTH_REALM"),
         sys.env("AUTH_CLIENT_ID"),
         sys.env("AUTH_SECRET_KEY"),
-        sys.env("AUTH_AUDIENCE"),
         sys.env.get("AUTH_RESOURCES_POLICY_GLOBAL_NAME")
       ),
       HttpConfig.load(),
       S3Config.load(),
-      DrsConfig.load()
+      DrsConfig.load(),
+      FerloadClientConfig.load()
     )
 
   }

@@ -18,7 +18,7 @@ class ResourceServiceSpec extends AnyFlatSpec with Matchers with EitherValues {
       .whenRequestMatches(_ => true)
       .thenRespond(""" {"access_token": "E123456", "expires_in": 65, "refresh_expires_in": 0, "token_type" : "bearer"} """)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", "audience", None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None)
 
     val resourceService = new ResourceService(authConfig, testingBackend)
     resourceService.clientToken().unwrap shouldBe PartyToken("E123456", 65, 0, None, "bearer")
@@ -29,7 +29,7 @@ class ResourceServiceSpec extends AnyFlatSpec with Matchers with EitherValues {
       .whenRequestMatches(_ => true)
       .thenRespond(""" {"error": "invalid_token"}""", statusCode = StatusCode.Forbidden)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", "audience", None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None)
 
     val resourceService = new ResourceService(authConfig, testingBackend)
     val error = the[HttpError[_]] thrownBy {
@@ -48,7 +48,7 @@ class ResourceServiceSpec extends AnyFlatSpec with Matchers with EitherValues {
       .whenRequestMatches(r => r.uri.path == Seq("realms", "realm", "authz", "protection", "resource_set", "F1") && r.method.method == "GET")
       .thenRespond("", statusCode = StatusCode.Ok)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", "audience", None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None)
 
     val resourceService = new ResourceService(authConfig, testingBackend)
     resourceService.existResource("F1").unwrap shouldBe StatusCode.Ok
@@ -61,7 +61,7 @@ class ResourceServiceSpec extends AnyFlatSpec with Matchers with EitherValues {
       .whenRequestMatches(r => r.uri.path == Seq("realms", "realm", "authz", "protection", "resource_set", "F1"))
       .thenRespond("", statusCode = StatusCode.NotFound)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", "audience", None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None)
 
     val resourceService = new ResourceService(authConfig, testingBackend)
     resourceService.existResource("F1").unwrap shouldBe StatusCode.NotFound
@@ -118,7 +118,7 @@ class ResourceServiceSpec extends AnyFlatSpec with Matchers with EitherValues {
           |}
           | """.stripMargin, statusCode = StatusCode.Ok)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", "audience", None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None)
 
     val resourceService = new ResourceService(authConfig, testingBackend)
     resourceService.getResourceById("FI1").unwrap shouldBe ReadResource(

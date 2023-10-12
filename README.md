@@ -47,12 +47,17 @@ Keyckloak Authentication server information :
 - `AUTH_URL` : Keycloak URL
 - `AUTH_REALM` : Keycloak Realm
 - `AUTH_CLIENT_ID` : Id of the client that contains resource definition and permissions
-- `AUTH_SECRET_KEY` : Secret of the client that contains resource definition and permissions
-- `AUTH_AUDIENCE` : ???
+- `AUTH_CLIENT_SECRET` : Secret of the client that contains resource definition and permissions
 - `AUTH_RESOURCES_POLICY_GLOBAL_NAME` : Name of the resource a user should have access to be able to download all files.
   Works only with endpoints that fetch files by urls. Can be empty.
 
-AWS S3 information :
+Ferload Client: This section is used to configure ferload clients taht can be installed to download files by requesting ferload endpoints.
+- `FERLOAD_CLIENT_METHOD` : 2 possible values : `token`or `password`. Default `token`.
+- `FERLOAD_CLIENT_CLIENT_ID` : client id to use to authenticate user in case of `password` method.
+- `FERLOAD_CLIENT_TOKEN_LINK` : url to use to fetch new token in case of `token` method.
+- `FERLOAD_CLIENT_TOKEN_HELPER` : text to display in ferload client to explain how to get a new token. Used only if `FERLOAD_CLIENT_METHOD` is `token`. 
+
+  AWS S3 information :
 
 - `AWS_ACCESS_KEY` : Access key of the AWS account
 - `AWS_SECRET_KEY` : Secret key of the AWS account
@@ -77,6 +82,9 @@ DRS Information :
 HTTP Server information :
 - `HTTP_HOST` : Address HTTP server should listen to. Default 0.0.0.0 (all interfaces)
 - `HTTP_PORT`: Port HTTP server should listen to. Default 9090
+
+Log configuration :
+- `LOG_LEVEL` : Log level. Default WARN.
 
 ## Endpoints :
 
