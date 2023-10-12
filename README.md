@@ -1,8 +1,8 @@
 # Ferload
 
-    [![Docker Pulls](https://img.shields.io/docker/pulls/ferlabcrsj/ferload)](https://hub.docker.com/r/ferlab/ferload)
-    [![Docker Image Size (latest SEMVER)](https://img.shields.io/docker/image-size/ferlabcrsj/ferload?sort=semver)](https://hub.docker.com/r/ferlab/ferload)
-    [![Docker Image Version (latest semver)](https://img.shields.io/docker/v/ferlabcrsj/ferload?sort=semver)](https://hub.docker.com/r/ferlab/ferload)
+[![Docker Pulls](https://img.shields.io/docker/pulls/ferlabcrsj/ferload)](https://hub.docker.com/r/ferlab/ferload)
+[![Docker Image Size (latest SEMVER)](https://img.shields.io/docker/image-size/ferlabcrsj/ferload?sort=semver)](https://hub.docker.com/r/ferlab/ferload)
+[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/ferlabcrsj/ferload?sort=semver)](https://hub.docker.com/r/ferlab/ferload)
 
 Ferload is an api that allows to control access to files stored in any object store S3-compliant, and generate presigned url if user is granted.
 Ferload is compliant with [GA4GH Data Repository Service](https://ga4gh.github.io/data-repository-service-schemas/). For now, only Bearers tokens are supported (not Passport and Visas).
