@@ -19,10 +19,10 @@ object ConfigEndpoint:
 
   def configServerEndpoint(config: Config): ServerEndpoint[Any, IO] = configEndpoint.serverLogicSuccess(_ => {
     if (config.ferloadClientConfig.method == FerloadClientConfig.TOKEN) {
-      val tokenConfig = TokenConfig(config.ferloadClientConfig.tokenLink.get, config.ferloadClientConfig.tokenHelper)
+      val tokenConfig = TokenConfig(config.ferloadClientConfig.clientId, config.ferloadClientConfig.tokenLink.get, config.ferloadClientConfig.tokenHelper)
       IO.pure(FerloadConfig(config.ferloadClientConfig.method, None, Some(tokenConfig)))
     } else if (config.ferloadClientConfig.method == FerloadClientConfig.PASSWORD) {
-      val kc = KeycloakConfig(config.auth.authUrl, config.auth.realm, config.ferloadClientConfig.clientId.get, config.auth.clientId)
+      val kc = KeycloakConfig(config.auth.authUrl, config.auth.realm, config.ferloadClientConfig.clientId, config.auth.clientId)
       IO.pure(FerloadConfig(config.ferloadClientConfig.method, Some(kc), None))
     }
     else {

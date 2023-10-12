@@ -53,7 +53,7 @@ Keyckloak Authentication server information :
 
 Ferload Client: This section is used to configure ferload clients taht can be installed to download files by requesting ferload endpoints.
 - `FERLOAD_CLIENT_METHOD` : 2 possible values : `token`or `password`. Default `token`.
-- `FERLOAD_CLIENT_CLIENT_ID` : client id to use to authenticate user in case of `password` method.
+- `FERLOAD_CLIENT_CLIENT_ID` : client id to use to authenticate user (`password` method) or refesh token (`token` method).
 - `FERLOAD_CLIENT_TOKEN_LINK` : url to use to fetch new token in case of `token` method.
 - `FERLOAD_CLIENT_TOKEN_HELPER` : text to display in ferload client to explain how to get a new token. Used only if `FERLOAD_CLIENT_METHOD` is `token`. 
 
