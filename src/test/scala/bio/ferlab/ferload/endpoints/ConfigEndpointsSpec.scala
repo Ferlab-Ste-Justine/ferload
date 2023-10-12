@@ -56,6 +56,6 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       .response(asJson[FerloadConfig])
       .send(backendStub)
 
-    val expected = FerloadConfig(FerloadClientConfig.TOKEN, None, Some(TokenConfig("ferloadClientId","https://ferload.ferlab.bio/token", Some("Please copy / paste this url in your browser to get a new authentication token."))))
+    val expected = FerloadConfig(FerloadClientConfig.TOKEN, None, Some(TokenConfig("realm", "ferloadClientId", "https://ferload.ferlab.bio/token", Some("Please copy / paste this url in your browser to get a new authentication token."))))
     response.map(_.body.value shouldBe expected).unwrap
   }
