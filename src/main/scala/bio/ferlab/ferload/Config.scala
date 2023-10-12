@@ -78,7 +78,7 @@ case class AuthConfig(authUrl: String, realm: String, clientId: String, clientSe
   val baseUri = s"$authUrl/realms/$realm"
 }
 
-case class FerloadClientConfig(method: String, clientId: Option[String], tokenLink: Option[String], tokenHelper: Option[String])
+case class FerloadClientConfig(method: String, clientId: String, tokenLink: Option[String], tokenHelper: Option[String])
 
 object FerloadClientConfig {
   val TOKEN: String = "token"
@@ -86,7 +86,7 @@ object FerloadClientConfig {
   def load(): FerloadClientConfig = {
     val f = FerloadClientConfig(
       sys.env.getOrElse("FERLOAD_CLIENT_METHOD", "token"),
-      sys.env.get("FERLOAD_CLIENT_CLIENT_ID"),
+      sys.env("FERLOAD_CLIENT_CLIENT_ID"),
       sys.env.get("FERLOAD_CLIENT_TOKEN_LINK"),
       sys.env.get("FERLOAD_CLIENT_TOKEN_HELPER")
     )

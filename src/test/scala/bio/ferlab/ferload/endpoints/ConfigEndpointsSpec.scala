@@ -23,7 +23,7 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       HttpConfig("localhost", 9090),
       S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600),
       DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio"),
-      FerloadClientConfig(FerloadClientConfig.PASSWORD, Some("ferloadClientId"), None, None)
+      FerloadClientConfig(FerloadClientConfig.PASSWORD, "ferloadClientId", None, None)
     )
     val backendStub = TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
       .whenServerEndpointRunLogic(configServerEndpoint(config))
@@ -45,7 +45,7 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       HttpConfig("localhost", 9090),
       S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600),
       DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio"),
-      FerloadClientConfig(FerloadClientConfig.TOKEN, None, Some("https://ferload.ferlab.bio/token"), Some("Please copy / paste this url in your browser to get a new authentication token."))
+      FerloadClientConfig(FerloadClientConfig.TOKEN, "ferloadClientId", Some("https://ferload.ferlab.bio/token"), Some("Please copy / paste this url in your browser to get a new authentication token."))
     )
     val backendStub = TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
       .whenServerEndpointRunLogic(configServerEndpoint(config))
@@ -56,6 +56,6 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       .response(asJson[FerloadConfig])
       .send(backendStub)
 
-    val expected = FerloadConfig(FerloadClientConfig.TOKEN, None, Some(TokenConfig("https://ferload.ferlab.bio/token", Some("Please copy / paste this url in your browser to get a new authentication token."))))
+    val expected = FerloadConfig(FerloadClientConfig.TOKEN, None, Some(TokenConfig("ferloadClientId","https://ferload.ferlab.bio/token", Some("Please copy / paste this url in your browser to get a new authentication token."))))
     response.map(_.body.value shouldBe expected).unwrap
   }
