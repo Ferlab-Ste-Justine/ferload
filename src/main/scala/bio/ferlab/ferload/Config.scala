@@ -1,5 +1,7 @@
 package bio.ferlab.ferload
 
+import bio.ferlab.ferload.FerloadClientConfig.DEVICE
+
 case class Config(auth: AuthConfig, http: HttpConfig, s3Config: S3Config, drsConfig: DrsConfig, ferloadClientConfig: FerloadClientConfig)
 
 case class S3Config(
@@ -74,8 +76,37 @@ object HttpConfig {
   }
 }
 
-case class AuthConfig(authUrl: String, realm: String, clientId: String, clientSecret: String, resourcesGlobalName: Option[String]) {
+case class AuthConfig(
+                       authUrl: String,
+                       realm: String,
+                       clientId: String,
+                       clientSecret: String,
+                       deviceClientId: Option[String],
+                       deviceClientSecret: Option[String],
+                       resourcesGlobalName: Option[String]
+                     ) {
   val baseUri = s"$authUrl/realms/$realm"
+}
+
+object AuthConfig {
+  def load(): AuthConfig = {
+    val f = AuthConfig(
+      sys.env("AUTH_URL"),
+      sys.env("AUTH_REALM"),
+      sys.env("AUTH_CLIENT_ID"),
+      sys.env("AUTH_CLIENT_SECRET"),
+      sys.env.get("AUTH_DEVICE_CLIENT_ID"),
+      sys.env.get("AUTH_DEVICE_CLIENT_SECRET"),
+      sys.env.get("AUTH_RESOURCES_POLICY_GLOBAL_NAME")
+    )
+    if (sys.env.getOrElse("FERLOAD_CLIENT_METHOD", "token") == DEVICE && f.deviceClientId.isEmpty) {
+      throw new IllegalArgumentException(s"When FERLOAD_CLIENT_METHOD is `device`, AUTH_DEVICE_CLIENT_ID must be provided")
+    }
+    if (sys.env.getOrElse("FERLOAD_CLIENT_METHOD", "token") == DEVICE && f.deviceClientSecret.isEmpty) {
+      throw new IllegalArgumentException(s"When FERLOAD_CLIENT_METHOD is `device`, AUTH_DEVICE_CLIENT_SECRET must be provided")
+    }
+    f
+  }
 }
 
 case class FerloadClientConfig(method: String, clientId: String, tokenLink: Option[String], tokenHelper: Option[String])
@@ -83,6 +114,7 @@ case class FerloadClientConfig(method: String, clientId: String, tokenLink: Opti
 object FerloadClientConfig {
   val TOKEN: String = "token"
   val PASSWORD: String = "password"
+  val DEVICE: String = "device"
   def load(): FerloadClientConfig = {
     val f = FerloadClientConfig(
       sys.env.getOrElse("FERLOAD_CLIENT_METHOD", "token"),
@@ -90,11 +122,11 @@ object FerloadClientConfig {
       sys.env.get("FERLOAD_CLIENT_TOKEN_LINK"),
       sys.env.get("FERLOAD_CLIENT_TOKEN_HELPER")
     )
-    if (f.method != TOKEN && f.method != PASSWORD) {
+    if (f.method != TOKEN && f.method != PASSWORD && f.method != DEVICE) {
       throw new IllegalArgumentException(s"FERLOAD_CLIENT_METHOD must be $TOKEN or $PASSWORD")
     }
-    if (f.method == TOKEN && f.tokenLink.isEmpty) {
-      throw new IllegalArgumentException(s"FERLOAD_CLIENT_TOKEN_LINK must be set when FERLOAD_CLIENT_METHOD is $TOKEN")
+    if ((f.method == TOKEN || f.method == DEVICE) && f.tokenLink.isEmpty) {
+      throw new IllegalArgumentException(s"FERLOAD_CLIENT_TOKEN_LINK must be set when FERLOAD_CLIENT_METHOD is $TOKEN or $DEVICE")
     }
     f
   }
@@ -104,13 +136,7 @@ object Config {
   def load(): Config = {
 
     Config(
-      AuthConfig(
-        sys.env("AUTH_URL"),
-        sys.env("AUTH_REALM"),
-        sys.env("AUTH_CLIENT_ID"),
-        sys.env("AUTH_CLIENT_SECRET"),
-        sys.env.get("AUTH_RESOURCES_POLICY_GLOBAL_NAME")
-      ),
+      AuthConfig.load(),
       HttpConfig.load(),
       S3Config.load(),
       DrsConfig.load(),

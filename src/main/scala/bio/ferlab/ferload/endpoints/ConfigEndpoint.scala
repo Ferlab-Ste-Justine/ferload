@@ -1,7 +1,7 @@
 package bio.ferlab.ferload.endpoints
 
-import bio.ferlab.ferload.{Config, FerloadClientConfig}
 import bio.ferlab.ferload.model.{FerloadConfig, KeycloakConfig, TokenConfig}
+import bio.ferlab.ferload.{Config, FerloadClientConfig}
 import cats.effect.IO
 import io.circe.generic.auto.*
 import sttp.tapir.*
@@ -24,6 +24,10 @@ object ConfigEndpoint:
     } else if (config.ferloadClientConfig.method == FerloadClientConfig.PASSWORD) {
       val kc = KeycloakConfig(config.auth.authUrl, config.auth.realm, config.ferloadClientConfig.clientId, config.auth.clientId)
       IO.pure(FerloadConfig(config.ferloadClientConfig.method, Some(kc), None))
+    } else if (config.ferloadClientConfig.method == FerloadClientConfig.DEVICE) {
+      val kc = KeycloakConfig(config.auth.authUrl, config.auth.realm, config.ferloadClientConfig.clientId, config.auth.clientId, config.auth.deviceClientId)
+      val deviceConfig = TokenConfig(config.auth.realm, config.ferloadClientConfig.clientId, config.ferloadClientConfig.tokenLink.get, config.ferloadClientConfig.tokenHelper)
+      IO.pure(FerloadConfig(config.ferloadClientConfig.method, Some(kc), Some(deviceConfig)))
     }
     else {
       IO.raiseError(new IllegalStateException(s"Invalid configuration type ${config.ferloadClientConfig.method}"))
