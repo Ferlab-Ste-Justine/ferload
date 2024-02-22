@@ -48,13 +48,15 @@ Keyckloak Authentication server information :
 - `AUTH_REALM` : Keycloak Realm
 - `AUTH_CLIENT_ID` : Id of the client that contains resource definition and permissions
 - `AUTH_CLIENT_SECRET` : Secret of the client that contains resource definition and permissions
+- `AUTH_DEVICE_CLIENT_ID` : Id of the client with OAuth 2 device authorization granted. Required if `FERLOAD_CLIENT_METHOD` is `device`.
+- `AUTH_DEVICE_CLIENT_SECRET` : Secret of the client with OAuth 2 device authorization granted. Required if `FERLOAD_CLIENT_METHOD` is `device`.
 - `AUTH_RESOURCES_POLICY_GLOBAL_NAME` : Name of the resource a user should have access to be able to download all files.
   Works only with endpoints that fetch files by urls. Can be empty.
 
 Ferload Client: This section is used to configure ferload clients taht can be installed to download files by requesting ferload endpoints.
-- `FERLOAD_CLIENT_METHOD` : 2 possible values : `token`or `password`. Default `token`.
-- `FERLOAD_CLIENT_CLIENT_ID` : client id to use to authenticate user (`password` method) or refesh token (`token` method).
-- `FERLOAD_CLIENT_TOKEN_LINK` : url to use to fetch new token in case of `token` method.
+- `FERLOAD_CLIENT_METHOD` : 3 possible values : `token`or `password` or `device`. Default `token`.
+- `FERLOAD_CLIENT_CLIENT_ID` : client id to use to authenticate user (`password` method) or refesh token (`token` or `device` methods).
+- `FERLOAD_CLIENT_TOKEN_LINK` : url to use to fetch new token in case of `token` or `device` method.
 - `FERLOAD_CLIENT_TOKEN_HELPER` : text to display in ferload client to explain how to get a new token. Used only if `FERLOAD_CLIENT_METHOD` is `token`. 
 
   AWS S3 information :
