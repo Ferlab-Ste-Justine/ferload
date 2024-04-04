@@ -81,8 +81,7 @@ case class AuthConfig(
                        realm: String,
                        clientId: String,
                        clientSecret: String,
-                       deviceClientId: Option[String],
-                       deviceClientSecret: Option[String],
+                       audience: Option[String],
                        resourcesGlobalName: Option[String]
                      ) {
   val baseUri = s"$authUrl/realms/$realm"
@@ -95,15 +94,11 @@ object AuthConfig {
       sys.env("AUTH_REALM"),
       sys.env("AUTH_CLIENT_ID"),
       sys.env("AUTH_CLIENT_SECRET"),
-      sys.env.get("AUTH_DEVICE_CLIENT_ID"),
-      sys.env.get("AUTH_DEVICE_CLIENT_SECRET"),
+      sys.env.get("AUTH_AUDIENCE_CLIENT_ID"),
       sys.env.get("AUTH_RESOURCES_POLICY_GLOBAL_NAME")
     )
-    if (sys.env.getOrElse("FERLOAD_CLIENT_METHOD", "token") == DEVICE && f.deviceClientId.isEmpty) {
-      throw new IllegalArgumentException(s"When FERLOAD_CLIENT_METHOD is `device`, AUTH_DEVICE_CLIENT_ID must be provided")
-    }
-    if (sys.env.getOrElse("FERLOAD_CLIENT_METHOD", "token") == DEVICE && f.deviceClientSecret.isEmpty) {
-      throw new IllegalArgumentException(s"When FERLOAD_CLIENT_METHOD is `device`, AUTH_DEVICE_CLIENT_SECRET must be provided")
+    if (sys.env.getOrElse("FERLOAD_CLIENT_METHOD", "token") == DEVICE && f.audience.isEmpty) {
+      throw new IllegalArgumentException(s"When FERLOAD_CLIENT_METHOD is `device`, AUTH_AUDIENCE_CLIENT_ID must be provided")
     }
     f
   }

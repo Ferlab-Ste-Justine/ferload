@@ -25,9 +25,8 @@ object ConfigEndpoint:
       val kc = KeycloakConfig(config.auth.authUrl, config.auth.realm, config.ferloadClientConfig.clientId, config.auth.clientId)
       IO.pure(FerloadConfig(config.ferloadClientConfig.method, Some(kc), None))
     } else if (config.ferloadClientConfig.method == FerloadClientConfig.DEVICE) {
-      val kc = KeycloakConfig(config.auth.authUrl, config.auth.realm, config.ferloadClientConfig.clientId, config.auth.clientId, config.auth.deviceClientId)
-      val deviceConfig = TokenConfig(config.auth.realm, config.ferloadClientConfig.clientId, config.ferloadClientConfig.tokenLink.get, config.ferloadClientConfig.tokenHelper)
-      IO.pure(FerloadConfig(config.ferloadClientConfig.method, Some(kc), Some(deviceConfig)))
+      val kc = KeycloakConfig(config.auth.authUrl, config.auth.realm, config.auth.clientId, config.auth.audience.get)
+      IO.pure(FerloadConfig(config.ferloadClientConfig.method, Some(kc), None))
     }
     else {
       IO.raiseError(new IllegalStateException(s"Invalid configuration type ${config.ferloadClientConfig.method}"))
