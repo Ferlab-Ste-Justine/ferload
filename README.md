@@ -48,8 +48,7 @@ Keyckloak Authentication server information :
 - `AUTH_REALM` : Keycloak Realm
 - `AUTH_CLIENT_ID` : Id of the client that contains resource definition and permissions
 - `AUTH_CLIENT_SECRET` : Secret of the client that contains resource definition and permissions
-- `AUTH_DEVICE_CLIENT_ID` : Id of the client with OAuth 2 device authorization granted. Required if `FERLOAD_CLIENT_METHOD` is `device`.
-- `AUTH_DEVICE_CLIENT_SECRET` : Secret of the client with OAuth 2 device authorization granted. Required if `FERLOAD_CLIENT_METHOD` is `device`.
+- `AUTH_AUDIENCE_CLIENT_ID` : Id of the public client, with OAuth 2 device authorization granted. Required if `FERLOAD_CLIENT_METHOD` is `device`.
 - `AUTH_RESOURCES_POLICY_GLOBAL_NAME` : Name of the resource a user should have access to be able to download all files.
   Works only with endpoints that fetch files by urls. Can be empty.
 

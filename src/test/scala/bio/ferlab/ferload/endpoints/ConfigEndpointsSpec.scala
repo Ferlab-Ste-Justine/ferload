@@ -19,7 +19,7 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
   "config" should "return expected config for password method" in {
     //given
     val config = Config(
-      AuthConfig("http://localhost:8080", "realm", "clientId", "clientSecret", None, None, None),
+      AuthConfig("http://localhost:8080", "realm", "clientId", "clientSecret", None, None),
       HttpConfig("localhost", 9090),
       S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600),
       DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio"),
@@ -41,7 +41,7 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
   it should "return expected config for token method" in {
     //given
     val config = Config(
-      AuthConfig("http://localhost:8080", "realm", "clientId", "clientSecret", None, None, None),
+      AuthConfig("http://localhost:8080", "realm", "clientId", "clientSecret", None, None),
       HttpConfig("localhost", 9090),
       S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600),
       DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio"),
@@ -63,7 +63,7 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
   it should "return expected config for device method" in {
     //given
     val config = Config(
-      AuthConfig("http://localhost:8080", "realm", "clientId", "clientSecret", Some("deviceClient"), Some("deviceClientSecret"), None),
+      AuthConfig("http://localhost:8080", "realm", "resource_client", "clientSecret", Some("cqdg_acl"), None),
       HttpConfig("localhost", 9090),
       S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600),
       DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio"),
@@ -80,8 +80,8 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
 
     val expected = FerloadConfig(
       FerloadClientConfig.DEVICE,
-      Some(KeycloakConfig("http://localhost:8080", "realm", "ferloadClientId", "clientId", Some("deviceClient"))),
-      Some(TokenConfig("realm", "ferloadClientId", "https://ferload.ferlab.bio/token", Some("Please copy / paste this url in your browser to get a new authentication token.")))
+      Some(KeycloakConfig("http://localhost:8080", "realm", "resource_client", "cqdg_acl")),
+      None
     )
     response.map(_.body.value shouldBe expected).unwrap
   }
