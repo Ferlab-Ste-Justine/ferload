@@ -56,7 +56,7 @@ object ObjectsEndpoints:
         _ =>
           val resourcesIO: IO[List[ReadResource]] = user.permissions.toList.traverse(p => resourceService.getResourceById(p.resource_id))
           resourcesIO.map { resources =>
-            val urls: Seq[(String, (String, String))] = resources.flatMap(r => S3Service.parseS3Urls(r.uris).toOption.map(r.name -> _))
+            val urls: Seq[(String, (String, String))] = resources.flatMap(r => S3Service.parseS3Urls(r.uris).toOption.map(r.displayName.getOrElse(r.name) -> _))
             val m: Map[String, String] = urls.map { case (name, (bucket, path)) => name -> s3Service.presignedUrl(bucket, path) }.toMap
             m
           }
