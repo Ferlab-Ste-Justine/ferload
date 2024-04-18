@@ -1,7 +1,7 @@
 package bio.ferlab.ferload.endpoints
 
 import bio.ferlab.ferload.endpoints.ConfigEndpoint.configServerEndpoint
-import bio.ferlab.ferload.model.{FerloadConfig, KeycloakConfig, TokenConfig}
+import bio.ferlab.ferload.model.{ClientConfig, FerloadConfig, KeycloakConfig, TokenConfig}
 import bio.ferlab.ferload.{AuthConfig, Config, DrsConfig, FerloadClientConfig, HttpConfig, S3Config, unwrap}
 import cats.effect.IO
 import io.circe.generic.auto.*
@@ -34,7 +34,7 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       .response(asJson[FerloadConfig])
       .send(backendStub)
 
-    val expected = FerloadConfig(FerloadClientConfig.PASSWORD, Some(KeycloakConfig("http://localhost:8080", "realm", "ferloadClientId", "clientId")), None)
+    val expected = FerloadConfig(FerloadClientConfig.PASSWORD, Some(KeycloakConfig("http://localhost:8080", "realm", "ferloadClientId", "clientId")), None, None)
     response.map(_.body.value shouldBe expected).unwrap
   }
 
@@ -56,7 +56,18 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       .response(asJson[FerloadConfig])
       .send(backendStub)
 
-    val expected = FerloadConfig(FerloadClientConfig.TOKEN, None, Some(TokenConfig("realm", "ferloadClientId", "https://ferload.ferlab.bio/token", Some("Please copy / paste this url in your browser to get a new authentication token."))))
+    val expected = FerloadConfig(
+      FerloadClientConfig.TOKEN, 
+      None, 
+      Some(TokenConfig(
+        "realm", 
+        "ferloadClientId", 
+        "https://ferload.ferlab.bio/token", 
+        Some("Please copy / paste this url in your browser to get a new authentication token."),
+        
+      )),
+      None
+    )
     response.map(_.body.value shouldBe expected).unwrap
   }
 
@@ -81,7 +92,8 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
     val expected = FerloadConfig(
       FerloadClientConfig.DEVICE,
       Some(KeycloakConfig("http://localhost:8080", "realm", "resource_client", "cqdg_acl")),
-      None
+      None,
+      Some(ClientConfig(`manifest-file-pointer` = "File ID", `manifest-filename` = "File Name", `manifest-size` = "File Size"))
     )
     response.map(_.body.value shouldBe expected).unwrap
   }
