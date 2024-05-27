@@ -132,7 +132,7 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
-    authorizationService.authLogic("token", Seq("F1", "F2")).unwrap.left.value shouldBe (StatusCode.Forbidden,  ErrorResponse("Forbidden", 403))
+    authorizationService.authLogic("token", Seq("F1", "F2")).unwrap.left.value shouldBe (StatusCode.Forbidden,  ErrorResponse("[F2]", 403))
   }
 
   it should "return a forbidden if user dont have access any resources" in {
