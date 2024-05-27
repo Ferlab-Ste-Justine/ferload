@@ -84,7 +84,7 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
 
     r.map {
         case User(_, permissions) if containAllPermissions(resources, permissions) => Right(User(token, permissions))
-        case _ => Left((StatusCode.Forbidden, ErrorResponse("Forbidden", 403)))
+        case User(_, permissions) => Left((StatusCode.Forbidden, ErrorResponse(resources.filterNot(permissions.map(_.resource_id).contains).mkString("[",",","]"), 403)))
       }
       .recover {
         case HttpError(_, statusCode) if Seq(StatusCode.Unauthorized, StatusCode.Forbidden).contains(statusCode) => Left((statusCode, ErrorResponse("Unauthorized", statusCode.code))).withRight[User]
