@@ -47,7 +47,7 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
    * Exchange a token for a Request Party Token (RPT) to return the list of user permissions.
    *
    * @param token     the token to exchange
-   * @return list of user permissions 
+   * @return list of user permissions
    */
   protected[services] def requestUserPermissions(token: String): IO[Seq[RawPermissions]] = {
     val body: Seq[(String, String)] = Seq(
