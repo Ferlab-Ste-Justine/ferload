@@ -1,10 +1,11 @@
 package bio.ferlab.ferload.services
 
 import bio.ferlab.ferload.AuthConfig
+import bio.ferlab.ferload.endpoints.PermissionsEndpoints.InputPermissions
 import bio.ferlab.ferload.endpoints.RawPermissions
 import bio.ferlab.ferload.model.*
 import cats.effect.IO
-import io.circe.Error
+import io.circe.{Error, Json}
 import io.circe.generic.auto.*
 import sttp.capabilities.fs2.Fs2Streams
 import sttp.client3.*
@@ -120,9 +121,17 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
    * @param resources the resources to access
    * @return ta list resources id the user is authorized. Otherwise, return errors (Unauthorized, Forbidden, NotFound).
    */
-  def authLogicAuthorizationForUser(token: String, resources: Seq[String]): IO[Either[(StatusCode, ErrorResponse), User]] = {
+  def authLogicAuthorizationForUser(token: String, resources: Json): IO[Either[(StatusCode, ErrorResponse), User]] = {
+    val parsedResources = resources.as[InputPermissions]
+
+    val fileIds = parsedResources match {
+      case Left(parsingError) =>
+        throw new IllegalArgumentException(s"Invalid JSON object: ${parsingError.message}")
+      case Right(json) => json.file_ids
+    }
+
     val r: IO[User] = for {
-      partyToken <- requestPartyToken(token, resources)
+      partyToken <- requestPartyToken(token, fileIds)
       permissionToken <- introspectPartyToken(partyToken)
     } yield {
       val value: Set[Permissions] = permissionToken.permissions.map(_.toSet).getOrElse(Set.empty)

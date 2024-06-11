@@ -4,6 +4,8 @@ import bio.ferlab.ferload.AuthConfig
 import bio.ferlab.ferload.unwrap
 import bio.ferlab.ferload.model.{ErrorResponse, IntrospectResponse, Permissions, User}
 import cats.effect.IO
+import io.circe.Json
+import io.circe.parser.parse
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -262,7 +264,9 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
-    authorizationService.authLogicAuthorizationForUser("token", Seq("F1")).unwrap.value shouldBe User("token", Set(Permissions("F1", Some("F1"), Seq("Scope1", "Scope2"))))
+    val inputJson = parse("""{"file_ids":["FI1"]}""".stripMargin).getOrElse(Json.Null)
+
+    authorizationService.authLogicAuthorizationForUser("token", inputJson).unwrap.value shouldBe User("token", Set(Permissions("F1", Some("F1"), Seq("Scope1", "Scope2"))))
   }
 
   it should "return only resources ids the user has access" in {
@@ -293,7 +297,9 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
-    authorizationService.authLogicAuthorizationForUser("token", Seq("F1", "F2")).unwrap.value shouldBe User("token", Set(Permissions("F1", Some("F1"), List("Scope1", "Scope2"))))
+    val inputJson = parse("""{"file_ids":["FI1","F2"]}""".stripMargin).getOrElse(Json.Null)
+
+    authorizationService.authLogicAuthorizationForUser("token", inputJson).unwrap.value shouldBe User("token", Set(Permissions("F1", Some("F1"), List("Scope1", "Scope2"))))
   }
 
   it should "return unauthorized if bearer token is not valid" in {
@@ -327,6 +333,8 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
-    authorizationService.authLogicAuthorizationForUser("token", Seq("F1")).unwrap.left.value shouldBe(StatusCode.Unauthorized, ErrorResponse("Unauthorized", 401))
+    val inputJson = parse("""{"file_ids":["FI1"]}""".stripMargin).getOrElse(Json.Null)
+
+    authorizationService.authLogicAuthorizationForUser("token", inputJson).unwrap.left.value shouldBe(StatusCode.Unauthorized, ErrorResponse("Unauthorized", 401))
   }
 }

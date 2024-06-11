@@ -6,13 +6,18 @@ import bio.ferlab.ferload.services.AuthorizationService
 import cats.effect.IO
 import sttp.model.StatusCode
 import sttp.tapir.*
-import sttp.tapir.CodecFormat.Json
 import sttp.tapir.json.circe.*
 import sttp.tapir.server.*
+import sttp.tapir.generic.auto._
+import io.circe._, io.circe.parser._
 
 case class RawPermissions(rsid: String)
 
 object PermissionsEndpoints:
+
+  case class InputPermissions(file_ids: Seq[String])
+
+  stringJsonBody.schema(implicitly[Schema[InputPermissions]].as[String])
 
 
   object ById:
@@ -28,11 +33,11 @@ object PermissionsEndpoints:
         .description("List of object id authorized for user")
         .example(List("FI1", "FI2")))
 
-    private def listPermissions(authorizationService: AuthorizationService): PartialServerEndpoint[(String, String), User, Unit, (StatusCode, ErrorResponse), List[String], Any, IO] = byIdEndpoint
+    private def listPermissions(authorizationService: AuthorizationService): PartialServerEndpoint[(String, io.circe.Json), User, Unit, (StatusCode, ErrorResponse), List[String], Any, IO] = byIdEndpoint
       .post
       .securityIn("by-list")
-      .securityIn(stringBody.description("List of ids of objects to retrieve").example("FI1,FI2"))
-      .serverSecurityLogic((token, objects) => authorizationService.authLogicAuthorizationForUser(token, objects.split(",")))
+      .securityIn(jsonBody.description("List of ids of objects to retrieve").example(parse("""{"file_ids":["FI1","FI2"]}""".stripMargin).getOrElse(io.circe.Json.Null)))
+      .serverSecurityLogic((token, objects) => authorizationService.authLogicAuthorizationForUser(token, objects))
       .description("Return list of object Id the user can download from a provided input list")
       .out(jsonBody[List[String]]
         .description("List of object id authorized for user")
