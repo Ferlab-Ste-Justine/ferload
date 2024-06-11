@@ -4,6 +4,8 @@ import bio.ferlab.ferload.AuthConfig
 import bio.ferlab.ferload.unwrap
 import bio.ferlab.ferload.model.{ErrorResponse, IntrospectResponse, Permissions, User}
 import cats.effect.IO
+import io.circe.Json
+import io.circe.parser.parse
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -236,5 +238,103 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
     authorizationService.authLogic("token", Seq("F1")).unwrap.left.value shouldBe(StatusCode.Unauthorized, ErrorResponse("Unauthorized", 401))
   }
 
+  "authLogicAuthorizationForUser" should "return a User" in {
+    val testingBackend = new RecordingSttpBackend(Http4sBackend.stub[IO]
+      .whenRequestMatches(r => r.uri.path == Seq("realms", "realm", "protocol", "openid-connect", "token"))
+      .thenRespond(""" {"access_token": "E123456", "expires_in": 65, "refresh_expires_in": 0, "token_type" : "bearer"} """)
+      .whenRequestMatches(r => r.uri.path.contains("introspect"))
+      .thenRespond(
+        """ {
+          | "active": true,
+          | "exp": 65,
+          | "iat": 20,
+          | "aud" : "cqdg",
+          | "nbf": 4,
+          | "permissions" : [
+          |   {
+          |     "resource_id": "F1",
+          |     "rsname": "F1",
+          |     "resource_scopes": ["Scope1", "Scope2"]
+          |   }
+          | ]
+          |} """.stripMargin)
+    )
 
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None, None)
+
+    val authorizationService = new AuthorizationService(authConfig, testingBackend)
+
+    val inputJson = parse("""{"file_ids":["FI1"]}""".stripMargin).getOrElse(Json.Null)
+
+    authorizationService.authLogicAuthorizationForUser("token", inputJson).unwrap.value shouldBe User("token", Set(Permissions("F1", Some("F1"), Seq("Scope1", "Scope2"))))
+  }
+
+  it should "return only resources ids the user has access" in {
+    val testingBackend = new RecordingSttpBackend(Http4sBackend.stub[IO]
+      .whenRequestMatches(r => {
+        r.uri.path == Seq("realms", "realm", "protocol", "openid-connect", "token")
+      })
+      .thenRespond(""" {"access_token": "E123456", "expires_in": 65, "refresh_expires_in": 0, "token_type" : "bearer"} """)
+      .whenRequestMatches(r => r.uri.path.contains("introspect"))
+      .thenRespond(
+        """ {
+          | "active": true,
+          | "exp": 65,
+          | "iat": 20,
+          | "aud" : "cqdg",
+          | "nbf": 4,
+          | "permissions" : [
+          |   {
+          |     "resource_id": "F1",
+          |     "rsname": "F1",
+          |     "resource_scopes": ["Scope1", "Scope2"]
+          |   }
+          | ]
+          |} """.stripMargin)
+    )
+
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None, None)
+
+    val authorizationService = new AuthorizationService(authConfig, testingBackend)
+
+    val inputJson = parse("""{"file_ids":["FI1","F2"]}""".stripMargin).getOrElse(Json.Null)
+
+    authorizationService.authLogicAuthorizationForUser("token", inputJson).unwrap.value shouldBe User("token", Set(Permissions("F1", Some("F1"), List("Scope1", "Scope2"))))
+  }
+
+  it should "return unauthorized if bearer token is not valid" in {
+    val testingBackend = new RecordingSttpBackend(Http4sBackend.stub[IO]
+      .whenRequestMatches(r => {
+        r.uri.path == Seq("realms", "realm", "protocol", "openid-connect", "token")
+      })
+      .thenRespond(
+        """ {
+          |    "error": "invalid_grant",
+          |    "error_description": "Invalid bearer token"
+          |} """.stripMargin, StatusCode.Unauthorized)
+      .whenRequestMatches(r => r.uri.path.contains("introspect"))
+      .thenRespond(
+        """ {
+          | "active": true,
+          | "exp": 65,
+          | "iat": 20,
+          | "aud" : "cqdg",
+          | "nbf": 4,
+          | "permissions" : [
+          |   {
+          |     "resource_id": "F1",
+          |     "rsname": "F1",
+          |     "resource_scopes": ["Scope1", "Scope2"]
+          |   }
+          | ]
+          |} """.stripMargin)
+    )
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None, None)
+
+    val authorizationService = new AuthorizationService(authConfig, testingBackend)
+
+    val inputJson = parse("""{"file_ids":["FI1"]}""".stripMargin).getOrElse(Json.Null)
+
+    authorizationService.authLogicAuthorizationForUser("token", inputJson).unwrap.left.value shouldBe(StatusCode.Unauthorized, ErrorResponse("Unauthorized", 401))
+  }
 }

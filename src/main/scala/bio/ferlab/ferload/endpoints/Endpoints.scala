@@ -2,8 +2,6 @@ package bio.ferlab.ferload.endpoints
 
 import bio.ferlab.ferload.Config
 import bio.ferlab.ferload.endpoints.ConfigEndpoint.configServerEndpoint
-import bio.ferlab.ferload.endpoints.LegacyObjectEndpoints.{objectByPathServer, listObjectsByPathServer}
-import bio.ferlab.ferload.endpoints.ObjectsEndpoints.ById.singleObjectServer
 import bio.ferlab.ferload.services.{AuthorizationService, ResourceService, S3Service}
 import cats.effect.IO
 import io.circe.generic.auto.*
@@ -25,6 +23,7 @@ object Endpoints:
     statusServerEndpoint,
     configServerEndpoint(config),
   ) ++ ObjectsEndpoints.all(config, authorizationService, resourceService, s3Service)
+    ++ PermissionsEndpoints.ById.all(authorizationService)
     ++ DrsEndpoints.all(config, authorizationService, resourceService, s3Service)
     ++ LegacyObjectEndpoints.all(config, authorizationService, s3Service)
 

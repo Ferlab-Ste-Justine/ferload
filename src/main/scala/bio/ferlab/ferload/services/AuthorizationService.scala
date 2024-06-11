@@ -1,10 +1,11 @@
 package bio.ferlab.ferload.services
 
 import bio.ferlab.ferload.AuthConfig
+import bio.ferlab.ferload.endpoints.PermissionsEndpoints.InputPermissions
+import bio.ferlab.ferload.endpoints.RawPermissions
 import bio.ferlab.ferload.model.*
 import cats.effect.IO
-import com.github.benmanes.caffeine.cache.{AsyncCacheLoader, AsyncLoadingCache, Caffeine, Expiry}
-import io.circe.Error
+import io.circe.{Error, Json}
 import io.circe.generic.auto.*
 import sttp.capabilities.fs2.Fs2Streams
 import sttp.client3.*
@@ -12,9 +13,6 @@ import sttp.client3.circe.*
 import sttp.model
 import sttp.model.MediaType.ApplicationXWwwFormUrlencoded
 import sttp.model.StatusCode
-
-import java.util.concurrent.Executor
-import scala.concurrent.ExecutionContext
 
 /**
  * Service used to authorize a user to access resources
@@ -44,6 +42,29 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
       .response(asJson[PartyToken])
       .send(backend)
     auth.flatMap(r => IO.fromEither(r.body).map(_.access_token))
+  }
+
+  /**
+   * Exchange a token for a Request Party Token (RPT) to return the list of user permissions.
+   *
+   * @param token     the token to exchange
+   * @return list of user permissions
+   */
+  protected[services] def requestUserPermissions(token: String): IO[Seq[RawPermissions]] = {
+    val body: Seq[(String, String)] = Seq(
+      "grant_type" -> "urn:ietf:params:oauth:grant-type:uma-ticket",
+      "audience" -> authConfig.clientId,
+      "response_mode" -> "permissions",
+    )
+
+    val auth: IO[Response[Either[ResponseException[String, Error], Seq[RawPermissions]]]] = basicRequest.post(uri"${authConfig.baseUri}/protocol/openid-connect/token")
+      .auth.bearer(token)
+      .contentType(ApplicationXWwwFormUrlencoded)
+      .body(body, "utf-8")
+      .response(asJson[Seq[RawPermissions]])
+      .send(backend)
+
+    auth.flatMap(r => IO.fromEither(r.body))
   }
 
   /**
@@ -89,6 +110,63 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
       .recover {
         case HttpError(_, statusCode) if Seq(StatusCode.Unauthorized, StatusCode.Forbidden).contains(statusCode) => Left((statusCode, ErrorResponse("Unauthorized", statusCode.code))).withRight[User]
         case e: HttpError[String] if e.statusCode == StatusCode.BadRequest && e.body.contains("invalid_resource") => Left((StatusCode.NotFound, ErrorResponse("Not Found", 404))).withRight[User]
+      }
+
+  }
+
+  /**
+   * Fetch only resources user has access from a provided input list of resources ids. Return a list resources id the user is authorized. Otherwise, return an error.
+   *
+   * @param token     the token to validate
+   * @param resources the resources to access
+   * @return ta list resources id the user is authorized. Otherwise, return errors (Unauthorized, Forbidden, NotFound).
+   */
+  def authLogicAuthorizationForUser(token: String, resources: Json): IO[Either[(StatusCode, ErrorResponse), User]] = {
+    val parsedResources = resources.as[InputPermissions]
+
+    val fileIds = parsedResources match {
+      case Left(parsingError) =>
+        throw new IllegalArgumentException(s"Invalid JSON object: ${parsingError.message}")
+      case Right(json) => json.file_ids
+    }
+
+    val r: IO[User] = for {
+      partyToken <- requestPartyToken(token, fileIds)
+      permissionToken <- introspectPartyToken(partyToken)
+    } yield {
+      val value: Set[Permissions] = permissionToken.permissions.map(_.toSet).getOrElse(Set.empty)
+      User(partyToken, value)
+    }
+
+    r.map {
+        case User(_, permissions) => Right(User(token, permissions))
+      }
+      .recover {
+        case HttpError(_, statusCode) if Seq(StatusCode.Unauthorized, StatusCode.Forbidden).contains(statusCode) => Left((statusCode, ErrorResponse("Unauthorized", statusCode.code))).withRight[User]
+        case e: HttpError[String] if e.statusCode == StatusCode.BadRequest && e.body.contains("invalid_resource") => Left((StatusCode.NotFound, ErrorResponse("Not Found", 404))).withRight[User]
+      }
+
+  }
+
+  /**
+   * Fetch all resources user has access. Return a list resources id the user is authorized. Otherwise, return an error.
+   *
+   * @param token     the token to validate
+   * @return ta list resources id the user is authorized. Otherwise, return errors (Unauthorized, Forbidden, NotFound).
+   */
+  def authLogicAuthorizationForUser(token: String): IO[Either[(StatusCode, ErrorResponse), Seq[String]]] = {
+    val r: IO[Seq[String]] = for {
+      userPermissions <- requestUserPermissions(token)
+    } yield {
+      userPermissions.map(_.rsid)
+    }
+
+    r.map {
+        case resource: Seq[String] => Right(resource)
+      }
+      .recover {
+        case HttpError(_, statusCode) if Seq(StatusCode.Unauthorized, StatusCode.Forbidden).contains(statusCode) => Left((statusCode, ErrorResponse("Unauthorized", statusCode.code))).withRight[Seq[String]]
+        case e: HttpError[String] if e.statusCode == StatusCode.BadRequest && e.body.contains("invalid_resource") => Left((StatusCode.NotFound, ErrorResponse("Not Found", 404))).withRight[Seq[String]]
       }
 
   }
