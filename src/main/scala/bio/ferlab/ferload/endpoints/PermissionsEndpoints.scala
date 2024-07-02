@@ -54,7 +54,7 @@ object PermissionsEndpoints:
     private def listPermissionsServer(authorizationService: AuthorizationService): ServerEndpoint[Any, IO] =
       listPermissions(authorizationService).serverLogicSuccess { user =>
         _ =>
-          IO(user.permissions.map(_.resource_id).toList)
+          IO(user.permissions.map(_.rsid).toList)
       }
 
     def all(authorizationService: AuthorizationService): Seq[ServerEndpoint[Any, IO]] = List(

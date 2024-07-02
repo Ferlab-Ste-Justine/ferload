@@ -22,7 +22,7 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       AuthConfig("http://localhost:8080", "realm", "clientId", "clientSecret", None, None),
       HttpConfig("localhost", 9090),
       S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600),
-      DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio"),
+      DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio", accessId = "accessId"),
       FerloadClientConfig(FerloadClientConfig.PASSWORD, "ferloadClientId", None, None)
     )
     val backendStub = TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
@@ -44,7 +44,7 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       AuthConfig("http://localhost:8080", "realm", "clientId", "clientSecret", None, None),
       HttpConfig("localhost", 9090),
       S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600),
-      DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio"),
+      DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio", accessId = "accessId"),
       FerloadClientConfig(FerloadClientConfig.TOKEN, "ferloadClientId", Some("https://ferload.ferlab.bio/token"), Some("Please copy / paste this url in your browser to get a new authentication token."))
     )
     val backendStub = TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
@@ -77,7 +77,7 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       AuthConfig("http://localhost:8080", "realm", "resource_client", "clientSecret", Some("cqdg_acl"), None),
       HttpConfig("localhost", 9090),
       S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600),
-      DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio"),
+      DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio", accessId = "accessId"),
       FerloadClientConfig(FerloadClientConfig.DEVICE, "ferloadClientId", Some("https://ferload.ferlab.bio/token"), Some("Please copy / paste this url in your browser to get a new authentication token."))
     )
     val backendStub = TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))

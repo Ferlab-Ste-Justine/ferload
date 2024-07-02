@@ -35,6 +35,7 @@ case class DrsConfig(
                       selfHost: String,
                       organizationName: String,
                       organizationUrl: String,
+                      accessId: String,
                       description: Option[String] = None,
                       contactUrl: Option[String] = None,
                       documentationUrl: Option[String] = None,
@@ -50,11 +51,11 @@ object DrsConfig {
       sys.env("DRS_SELF_HOST"),
       sys.env("DRS_ORGANIZATION_NAME"),
       sys.env("DRS_ORGANIZATION_URL"),
+      sys.env("DRS_ACCESS_ID"),
       sys.env.get("DRS_DESCRIPTION"),
       sys.env.get("DRS_CONTACT_URL"),
       sys.env.get("DRS_DOCUMENTATION_URL"),
       sys.env.get("DRS_ENVIRONMENT"),
-
     )
   }
 }

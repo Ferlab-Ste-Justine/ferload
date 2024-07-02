@@ -20,14 +20,14 @@ object ObjectsEndpoints:
 
     private val byIdEndpoint = baseEndpoint.securityIn("objects")
 
-    private def singleObject(authorizationService: AuthorizationService): PartialServerEndpoint[(String, String), User, Unit, (StatusCode, ErrorResponse), ObjectUrl, Any, IO] = byIdEndpoint
+    private def singleObject(authorizationService: AuthorizationService): PartialServerEndpoint[(String, String), (User, Option[String]), Unit, (StatusCode, ErrorResponse), ObjectUrl, Any, IO] = byIdEndpoint
       .get
       .securityIn(path[String].name("object_id"))
       .serverSecurityLogic((token, objectId) => authorizationService.authLogic(token, Seq(objectId)))
       .description("Retrieve an object by its id and return an url to download it")
       .out(jsonBody[ObjectUrl])
 
-    private def listObjects(authorizationService: AuthorizationService): PartialServerEndpoint[(String, String), User, Unit, (StatusCode, ErrorResponse), Map[String, String], Any, IO] = byIdEndpoint
+    private def listObjects(authorizationService: AuthorizationService): PartialServerEndpoint[(String, String), (User, Option[String]), Unit, (StatusCode, ErrorResponse), Map[String, String], Any, IO] = byIdEndpoint
       .post
       .securityIn("list")
       .securityIn(stringBody.description("List of ids of objects to retrieve").example("FI1\nFI2"))
@@ -39,10 +39,10 @@ object ObjectsEndpoints:
 
 
     def singleObjectServer(authorizationService: AuthorizationService, resourceService: ResourceService, s3Service: S3Service): ServerEndpoint[Any, IO] =
-      singleObject(authorizationService).serverLogicSuccess { user =>
+      singleObject(authorizationService).serverLogicSuccess { (user, _) =>
         _ =>
           for {
-            resource <- resourceService.getResourceById(user.permissions.head.resource_id)
+            resource <- resourceService.getResourceById(user.permissions.head.rsid)
             bucketAndPath <- IO.fromTry(S3Service.parseS3Urls(resource.uris))
             (bucket, path) = bucketAndPath
             url = s3Service.presignedUrl(bucket, path)
@@ -52,9 +52,9 @@ object ObjectsEndpoints:
 
 
     def listObjectsServer(authorizationService: AuthorizationService, resourceService: ResourceService, s3Service: S3Service): ServerEndpoint[Any, IO] =
-      listObjects(authorizationService).serverLogicSuccess { user =>
+      listObjects(authorizationService).serverLogicSuccess { (user, _) =>
         _ =>
-          val resourcesIO: IO[List[ReadResource]] = user.permissions.toList.traverse(p => resourceService.getResourceById(p.resource_id))
+          val resourcesIO: IO[List[ReadResource]] = user.permissions.toList.traverse(p => resourceService.getResourceById(p.rsid))
           resourcesIO.map { resources =>
             val urls: Seq[(String, (String, String))] = resources.flatMap(r => S3Service.parseS3Urls(r.uris).toOption.map(r.name -> _))
             val m: Map[String, String] = urls.map { case (name, (bucket, path)) => name -> s3Service.presignedUrl(bucket, path) }.toMap
@@ -70,13 +70,13 @@ object ObjectsEndpoints:
     )
 
   object ByPath:
-    private def byPathEndpoint(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, User, Unit, (StatusCode, ErrorResponse), Unit, Any, IO] =
+    private def byPathEndpoint(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, (User, Option[String]), Unit, (StatusCode, ErrorResponse), Unit, Any, IO] =
       baseEndpoint
         .securityIn("objects")
         .securityIn("bypath")
         .serverSecurityLogic(token => authorizationService.authLogic(token, Seq(resourceGlobalName)))
 
-    private def singleObject(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, User, String, (StatusCode, ErrorResponse), ObjectUrl, Any, IO] =
+    private def singleObject(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, (User, Option[String]), String, (StatusCode, ErrorResponse), ObjectUrl, Any, IO] =
       byPathEndpoint(authorizationService, resourceGlobalName)
         .get
         .description("Retrieve an object by its path and return an url to download it")
@@ -88,7 +88,7 @@ object ObjectsEndpoints:
         file => s3Service.presignedUrl(defaultBucket, file).pure[IO].map(ObjectUrl.apply)
       }
 
-    private def listObjects(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, User, String, (StatusCode, ErrorResponse), Map[String, String], Any, IO] = byPathEndpoint(authorizationService, resourceGlobalName)
+    private def listObjects(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, (User, Option[String]), String, (StatusCode, ErrorResponse), Map[String, String], Any, IO] = byPathEndpoint(authorizationService, resourceGlobalName)
       .description("Retrieve a list of objects by their path and return a list of download URLs for each object")
       .post
       .in("list")

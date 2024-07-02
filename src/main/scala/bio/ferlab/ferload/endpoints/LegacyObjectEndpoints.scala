@@ -15,13 +15,13 @@ import sttp.tapir.server.*
 object LegacyObjectEndpoints:
 
 
-  private def securedGlobalEndpoint(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, User, Unit, (StatusCode, ErrorResponse), Unit, Any, IO] =
+  private def securedGlobalEndpoint(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, (User, Option[String]), Unit, (StatusCode, ErrorResponse), Unit, Any, IO] =
     endpoint
       .securityIn(auth.bearer[String]())
       .errorOut(statusCode.and(jsonBody[ErrorResponse]))
       .serverSecurityLogic(token => authorizationService.authLogic(token, Seq(resourceGlobalName)))
 
-  private def objectByPath(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, User, List[String], (StatusCode, ErrorResponse), ObjectUrl, Any, IO] =
+  private def objectByPath(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, (User, Option[String]), List[String], (StatusCode, ErrorResponse), ObjectUrl, Any, IO] =
     securedGlobalEndpoint(authorizationService, resourceGlobalName)
       .get
       .description("Retrieve an object by its path and return an url to download it")
@@ -29,7 +29,7 @@ object LegacyObjectEndpoints:
       .in(paths.description("Path of the object to retrieve"))
       .out(jsonBody[ObjectUrl])
 
-  private def objectsByPaths(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, User, String, (StatusCode, ErrorResponse), Map[String, String], Any, IO] =
+  private def objectsByPaths(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, (User, Option[String]), String, (StatusCode, ErrorResponse), Map[String, String], Any, IO] =
     securedGlobalEndpoint(authorizationService, resourceGlobalName)
       .description("Retrieve a list of objects by their paths and return a list of download URLs for each object")
       .deprecated()

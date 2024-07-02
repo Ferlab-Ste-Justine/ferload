@@ -14,6 +14,8 @@ import sttp.model
 import sttp.model.MediaType.ApplicationXWwwFormUrlencoded
 import sttp.model.StatusCode
 
+import java.lang
+
 /**
  * Service used to authorize a user to access resources
  *
@@ -68,22 +70,26 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
   }
 
   /**
-   * Introspect a party token to get the permissions associated with it.
+   * Introspect a token to get contents.
    *
-   * @param partyToken the party token to introspect
+   * @param token the token to introspect
    * @return the response from the introspection endpoint
    */
-  protected[services] def introspectPartyToken(partyToken: String): IO[IntrospectResponse] = {
+  protected[services] def introspectToken(token: String): IO[IntrospectResponse] = {
 
     val introspect = basicRequest.post(uri"${authConfig.baseUri}/protocol/openid-connect/token/introspect")
       .contentType(ApplicationXWwwFormUrlencoded)
-      .body("token_type_hint" -> "requesting_party_token",
-        "token" -> partyToken,
+      .body(
+        "token" -> token,
         "client_id" -> authConfig.clientId,
         "client_secret" -> authConfig.clientSecret)
       .response(asJson[IntrospectResponse])
       .send(backend)
-    introspect.flatMap(r => IO.fromEither(r.body))
+    introspect.flatMap(r => {
+      IO.fromEither(r.body)
+    }
+
+      )
 
   }
 
@@ -94,22 +100,30 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
    * @param resources the resources to access
    * @return the user with permissions if the token is valid and if user have access to the resources. Otherwise, return errors (Unauthorized, Forbidden, NotFound).
    */
-  def authLogic(token: String, resources: Seq[String]): IO[Either[(StatusCode, ErrorResponse), User]] = {
-    val r: IO[User] = for {
+  def authLogic(token: String, resources: Seq[String], accessId: Option[String] = None): IO[Either[(StatusCode, ErrorResponse), (User, Option[String])]] = {
+    val r: IO[(User, Option[String])] = for {
+      accessToken <- introspectToken(token)
       partyToken <- requestPartyToken(token, resources)
-      permissionToken <- introspectPartyToken(partyToken)
+      permissionToken <- introspectToken(partyToken)
     } yield {
-      val value: Set[Permissions] = permissionToken.permissions.map(_.toSet).getOrElse(Set.empty)
-      User(partyToken, value)
+
+      //Only request with token from the audience client is authorized
+      val isAuthorizedClientAccessToken = accessToken.azp.exists(_.equalsIgnoreCase(authConfig.audience.get))
+      if(!isAuthorizedClientAccessToken){
+        throw HttpError(s"Unauthorized client: ${accessToken.azp.getOrElse("Nothing")}", StatusCode.Forbidden)
+      }
+
+      val value: Set[Permissions] = permissionToken.authorization.map(_.permissions.toSet).getOrElse(Set.empty)
+      (User(partyToken, value), accessId)
     }
 
     r.map {
-        case User(_, permissions) if containAllPermissions(resources, permissions) => Right(User(token, permissions))
-        case User(_, permissions) => Left((StatusCode.Forbidden, ErrorResponse(resources.filterNot(permissions.map(_.resource_id).contains).mkString("[",",","]"), 403)))
+        case (User(_, permissions), accessId) if containAllPermissions(resources, permissions) => Right((User(token, permissions), accessId))
+        case (User(_, permissions), _) => Left((StatusCode.Forbidden, ErrorResponse(resources.filterNot(permissions.map(_.rsid).contains).mkString("[",",","]"), 403)))
       }
       .recover {
-        case HttpError(_, statusCode) if Seq(StatusCode.Unauthorized, StatusCode.Forbidden).contains(statusCode) => Left((statusCode, ErrorResponse("Unauthorized", statusCode.code))).withRight[User]
-        case e: HttpError[String] if e.statusCode == StatusCode.BadRequest && e.body.contains("invalid_resource") => Left((StatusCode.NotFound, ErrorResponse("Not Found", 404))).withRight[User]
+        case HttpError(_, statusCode) if Seq(StatusCode.Unauthorized, StatusCode.Forbidden).contains(statusCode) => Left((statusCode, ErrorResponse("Unauthorized", statusCode.code))).withRight[(User, Option[String])]
+        case e: HttpError[String] if e.statusCode == StatusCode.BadRequest && e.body.contains("invalid_resource") => Left((StatusCode.NotFound, ErrorResponse("Not Found", 404))).withRight[(User, Option[String])]
       }
 
   }
@@ -132,9 +146,9 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
 
     val r: IO[User] = for {
       partyToken <- requestPartyToken(token, fileIds)
-      permissionToken <- introspectPartyToken(partyToken)
+      permissionToken <- introspectToken(partyToken)
     } yield {
-      val value: Set[Permissions] = permissionToken.permissions.map(_.toSet).getOrElse(Set.empty)
+      val value: Set[Permissions] = permissionToken.authorization.map(au => au.permissions.toSet).getOrElse(Set.empty)
       User(partyToken, value)
     }
 
@@ -184,7 +198,6 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
       resourceInPermissions.contains(r)
     })
   }
-
 }
 
 
