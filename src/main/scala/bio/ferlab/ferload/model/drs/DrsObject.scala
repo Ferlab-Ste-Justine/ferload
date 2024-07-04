@@ -36,15 +36,15 @@ case class DrsObject(
                     )
 
 object DrsObject {
-  def build(resource: ReadResource, presignedUrl: String, host: String): DrsObject = {
+  def build(resource: ReadResource, access_id: String, host: String): DrsObject = {
 
     val accessMethods = AccessMethod(
       `type` = "https",
       access_url = Some(AccessURL(
-        url = presignedUrl,
+        url = None,
         headers = None
       )),
-      access_id = None,
+      access_id = Some(access_id),
       region = None,
       authorizations = None
 

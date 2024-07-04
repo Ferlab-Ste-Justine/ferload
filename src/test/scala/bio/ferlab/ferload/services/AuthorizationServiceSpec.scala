@@ -2,7 +2,7 @@ package bio.ferlab.ferload.services
 
 import bio.ferlab.ferload.AuthConfig
 import bio.ferlab.ferload.unwrap
-import bio.ferlab.ferload.model.{ErrorResponse, IntrospectResponse, Permissions, User}
+import bio.ferlab.ferload.model.{Authorisation, ErrorResponse, IntrospectResponse, Permissions, User}
 import cats.effect.IO
 import io.circe.Json
 import io.circe.parser.parse
@@ -58,21 +58,23 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           | "iat": 20,
           | "aud" : "cqdg",
           | "nbf": 4,
+          | "authorization":{
           | "permissions" : [
           |   {
-          |     "resource_id": "F1",
+          |     "rsid": "F1",
           |     "rsname": "F1 Name",
-          |     "resource_scopes": ["Scope1", "Scope2"]
+          |     "scopes": ["Scope1", "Scope2"]
           |   }
           | ]
+          | }
           |} """.stripMargin)
     )
 
     val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None, None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
-    val resp = authorizationService.introspectPartyToken("E123456").unwrap
-    resp shouldBe IntrospectResponse(active = true, exp = Some(65), iat = Some(20), aud = Some("cqdg"), nbf = Some(4), permissions = Some(Seq(Permissions("F1", Some("F1 Name"), Seq("Scope1", "Scope2")))))
+    val resp = authorizationService.introspectToken("E123456").unwrap
+    resp shouldBe IntrospectResponse(active = true, exp = Some(65), iat = Some(20), aud = Some("cqdg"), sub = None, azp = None, nbf = Some(4), authorization = Some(Authorisation(Seq(Permissions("F1", Some("F1 Name"), Seq("Scope1", "Scope2"))))))
 
 
   }
@@ -89,21 +91,24 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           | "iat": 20,
           | "aud" : "cqdg",
           | "nbf": 4,
+          | "azp": "allowed_client",
+          | "authorization":{
           | "permissions" : [
           |   {
-          |     "resource_id": "F1",
+          |     "rsid": "F1",
           |     "rsname": "F1",
-          |     "resource_scopes": ["Scope1", "Scope2"]
+          |     "scopes": ["Scope1", "Scope2"]
           |   }
           | ]
+          | }
           |} """.stripMargin)
     )
 
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None, None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", Some("allowed_client"), None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
-    authorizationService.authLogic("token", Seq("F1")).unwrap.value shouldBe User("token", Set(Permissions("F1", Some("F1"), Seq("Scope1", "Scope2"))))
+    authorizationService.authLogic("token", Seq("F1"), "token").unwrap.value._1 shouldBe User("token", Set(Permissions("F1", Some("F1"), Seq("Scope1", "Scope2"))))
   }
 
   it should "return a forbidden if user dont have access to all resources" in {
@@ -119,22 +124,25 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           | "exp": 65,
           | "iat": 20,
           | "aud" : "cqdg",
+          | "azp": "allowed_client",
           | "nbf": 4,
+          | "authorization":{
           | "permissions" : [
           |   {
-          |     "resource_id": "F1",
+          |     "rsid": "F1",
           |     "rsname": "F1",
-          |     "resource_scopes": ["Scope1", "Scope2"]
+          |     "scopes": ["Scope1", "Scope2"]
           |   }
           | ]
+          | }
           |} """.stripMargin)
     )
 
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None, None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", Some("allowed_client"), None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
-    authorizationService.authLogic("token", Seq("F1", "F2")).unwrap.left.value shouldBe (StatusCode.Forbidden,  ErrorResponse("[F2]", 403))
+    authorizationService.authLogic("token", Seq("F1", "F2"), "token").unwrap.left.value shouldBe (StatusCode.Forbidden,  ErrorResponse("[F2]", 403))
   }
 
   it should "return a forbidden if user dont have access any resources" in {
@@ -154,20 +162,23 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           | "iat": 20,
           | "aud" : "cqdg",
           | "nbf": 4,
+          | "azp": "allowed_client",
+          | "authorization":{
           | "permissions" : [
           |   {
-          |     "resource_id": "F1",
+          |     "rsid": "F1",
           |     "rsname": "F1",
-          |     "resource_scopes": ["Scope1", "Scope2"]
+          |     "scopes": ["Scope1", "Scope2"]
           |   }
           | ]
+          | }
           |} """.stripMargin)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None, None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", Some("allowed_client"), None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
-    authorizationService.authLogic("token", Seq("F1")).unwrap.left.value shouldBe(StatusCode.Forbidden, ErrorResponse("Unauthorized", 403))
+    authorizationService.authLogic("token", Seq("F1"), "token").unwrap.left.value shouldBe(StatusCode.Forbidden, ErrorResponse("Unauthorized", 403))
   }
 
   it should "return a resource not found if resource does not exist" in {
@@ -188,20 +199,23 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           | "iat": 20,
           | "aud" : "cqdg",
           | "nbf": 4,
+          | "azp": "allowed_client",
+          | "authorization":{
           | "permissions" : [
           |   {
-          |     "resource_id": "F1",
+          |     "rsid": "F1",
           |     "rsname": "F1",
-          |     "resource_scopes": ["Scope1", "Scope2"]
+          |     "scopes": ["Scope1", "Scope2"]
           |   }
           | ]
+          | }
           |} """.stripMargin)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None, None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", Some("allowed_client"), None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
-    authorizationService.authLogic("token", Seq("F1")).unwrap.left.value shouldBe(StatusCode.NotFound, ErrorResponse("Not Found", 404))
+    authorizationService.authLogic("token", Seq("F1"), "token").unwrap.left.value shouldBe(StatusCode.NotFound, ErrorResponse("Not Found", 404))
   }
 
   it should "return unauthorized if bearer token is not valid" in {
@@ -222,20 +236,98 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           | "iat": 20,
           | "aud" : "cqdg",
           | "nbf": 4,
+          | "azp": "allowed_client",
+          | "authorization":{
           | "permissions" : [
           |   {
-          |     "resource_id": "F1",
+          |     "rsid": "F1",
           |     "rsname": "F1",
-          |     "resource_scopes": ["Scope1", "Scope2"]
+          |     "scopes": ["Scope1", "Scope2"]
           |   }
           | ]
+          | }
           |} """.stripMargin)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None, None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", Some("allowed_client"), None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
-    authorizationService.authLogic("token", Seq("F1")).unwrap.left.value shouldBe(StatusCode.Unauthorized, ErrorResponse("Unauthorized", 401))
+    authorizationService.authLogic("token", Seq("F1"), "token").unwrap.left.value shouldBe(StatusCode.Unauthorized, ErrorResponse("Unauthorized", 401))
+  }
+
+  // authLogic does return pre-sign url, only authorized client should be granted access
+  it should "return forbidden for any client other then the authorized client for device method" in {
+    val testingBackend = new RecordingSttpBackend(Http4sBackend.stub[IO]
+      .whenRequestMatches(r => r.uri.path == Seq("realms", "realm", "protocol", "openid-connect", "token"))
+      .thenRespond(""" {"access_token": "E123456", "expires_in": 65, "refresh_expires_in": 0, "token_type" : "bearer"} """)
+      .whenRequestMatches(r => r.uri.path.contains("introspect"))
+      .thenRespond(
+        """ {
+          | "active": true,
+          | "exp": 65,
+          | "iat": 20,
+          | "aud" : "cqdg",
+          | "nbf": 4,
+          | "azp": "allowed_client",
+          | "authorization":{
+          | "permissions" : [
+          |   {
+          |     "rsid": "F1",
+          |     "rsname": "F1",
+          |     "scopes": ["Scope1", "Scope2"]
+          |   }
+          | ]
+          | }
+          |} """.stripMargin)
+    )
+    val authConfigOk = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", Some("allowed_client"), None)
+
+    val authorizationServiceOk = new AuthorizationService(authConfigOk, testingBackend)
+
+    // match client: allowed_client
+    authorizationServiceOk.authLogic("token", Seq("F1"), "device").unwrap.value._1 shouldBe User("token", Set(Permissions("F1", Some("F1"), Seq("Scope1", "Scope2"))))
+
+    val authConfigNotOk = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", Some("other_allowed_client"), None)
+
+    val authorizationServiceNotOk = new AuthorizationService(authConfigNotOk, testingBackend)
+
+    // not matching clients: allowed_client vs. other_allowed_client
+    authorizationServiceNotOk.authLogic("token", Seq("F1"), "device").unwrap.left.value shouldBe(StatusCode.Forbidden, ErrorResponse("Unauthorized", 403))
+
+  }
+
+  it should "return User for any valid client for method other and device" in {
+    val testingBackend = new RecordingSttpBackend(Http4sBackend.stub[IO]
+      .whenRequestMatches(r => r.uri.path == Seq("realms", "realm", "protocol", "openid-connect", "token"))
+      .thenRespond(""" {"access_token": "E123456", "expires_in": 65, "refresh_expires_in": 0, "token_type" : "bearer"} """)
+      .whenRequestMatches(r => r.uri.path.contains("introspect"))
+      .thenRespond(
+        """ {
+          | "active": true,
+          | "exp": 65,
+          | "iat": 20,
+          | "aud" : "cqdg",
+          | "nbf": 4,
+          | "azp": "allowed_client",
+          | "authorization":{
+          | "permissions" : [
+          |   {
+          |     "rsid": "F1",
+          |     "rsname": "F1",
+          |     "scopes": ["Scope1", "Scope2"]
+          |   }
+          | ]
+          | }
+          |} """.stripMargin)
+    )
+
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", Some("other_allowed_client"), None)
+
+    val authorizationService = new AuthorizationService(authConfig, testingBackend)
+
+    // not matching clients: allowed_client vs. other_allowed_client
+    authorizationService.authLogic("token", Seq("F1"), "token").unwrap.value._1 shouldBe User("token", Set(Permissions("F1", Some("F1"), Seq("Scope1", "Scope2"))))
+
   }
 
   "authLogicAuthorizationForUser" should "return a User" in {
@@ -250,17 +342,20 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           | "iat": 20,
           | "aud" : "cqdg",
           | "nbf": 4,
+          | "azp": "allowed_client",
+          | "authorization":{
           | "permissions" : [
           |   {
-          |     "resource_id": "F1",
+          |     "rsid": "F1",
           |     "rsname": "F1",
-          |     "resource_scopes": ["Scope1", "Scope2"]
+          |     "scopes": ["Scope1", "Scope2"]
           |   }
           | ]
+          | }
           |} """.stripMargin)
     )
 
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None, None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", Some("allowed_client"), None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
@@ -283,17 +378,20 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           | "iat": 20,
           | "aud" : "cqdg",
           | "nbf": 4,
+          | "azp": "allowed_client",
+          | "authorization":{
           | "permissions" : [
           |   {
-          |     "resource_id": "F1",
+          |     "rsid": "F1",
           |     "rsname": "F1",
-          |     "resource_scopes": ["Scope1", "Scope2"]
+          |     "scopes": ["Scope1", "Scope2"]
           |   }
           | ]
+          | }
           |} """.stripMargin)
     )
 
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None, None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", Some("allowed_client"), None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
@@ -320,21 +418,71 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
           | "iat": 20,
           | "aud" : "cqdg",
           | "nbf": 4,
+          | "azp": "allowed_client",
+          | "authorization":{
           | "permissions" : [
           |   {
-          |     "resource_id": "F1",
+          |     "rsid": "F1",
           |     "rsname": "F1",
-          |     "resource_scopes": ["Scope1", "Scope2"]
+          |     "scopes": ["Scope1", "Scope2"]
           |   }
           | ]
+          | }
           |} """.stripMargin)
     )
-    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", None, None)
+    val authConfig = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", Some("allowed_client"), None)
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
 
     val inputJson = parse("""{"file_ids":["FI1"]}""".stripMargin).getOrElse(Json.Null)
 
     authorizationService.authLogicAuthorizationForUser("token", inputJson).unwrap.left.value shouldBe(StatusCode.Unauthorized, ErrorResponse("Unauthorized", 401))
+  }
+
+  // authLogicAuthorizationForUser does not return any pre-sign url, all valid clients should be able to access
+  it should "authorize for any valid client" in {
+    val testingBackend = new RecordingSttpBackend(Http4sBackend.stub[IO]
+      .whenRequestMatches(r => {
+        r.uri.path == Seq("realms", "realm", "protocol", "openid-connect", "token")
+      })
+      .thenRespond(""" {"access_token": "E123456", "expires_in": 65, "refresh_expires_in": 0, "token_type" : "bearer"} """)
+      .whenRequestMatches(r => r.uri.path.contains("introspect"))
+      .thenRespond(
+        """ {
+          | "active": true,
+          | "exp": 65,
+          | "iat": 20,
+          | "aud" : "cqdg",
+          | "nbf": 4,
+          | "azp": "allowed_client",
+          | "authorization":{
+          | "permissions" : [
+          |   {
+          |     "rsid": "F1",
+          |     "rsname": "F1",
+          |     "scopes": ["Scope1", "Scope2"]
+          |   }
+          | ]
+          | }
+          |} """.stripMargin)
+    )
+    val authConfigOne = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", Some("allowed_client"), None)
+
+    val authorizationServiceOne = new AuthorizationService(authConfigOne, testingBackend)
+
+    val inputJsonOne = parse("""{"file_ids":["FI1"]}""".stripMargin).getOrElse(Json.Null)
+
+    authorizationServiceOne.authLogicAuthorizationForUser("token", inputJsonOne).unwrap.value shouldBe User("token", Set(Permissions("F1", Some("F1"), Seq("Scope1", "Scope2"))))
+
+    //------------------------------------
+
+    val authConfigTwo = AuthConfig("http://stub.local", "realm", "clientId", "clientSecret", Some("other_allowed_client"), None)
+
+    val authorizationServiceTwo = new AuthorizationService(authConfigTwo, testingBackend)
+
+    val inputJsonTwo = parse("""{"file_ids":["FI1"]}""".stripMargin).getOrElse(Json.Null)
+
+    authorizationServiceTwo.authLogicAuthorizationForUser("token", inputJsonTwo).unwrap.value shouldBe User("token", Set(Permissions("F1", Some("F1"), Seq("Scope1", "Scope2"))))
+
   }
 }

@@ -15,22 +15,22 @@ import sttp.tapir.server.*
 object LegacyObjectEndpoints:
 
 
-  private def securedGlobalEndpoint(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, User, Unit, (StatusCode, ErrorResponse), Unit, Any, IO] =
+  private def securedGlobalEndpoint(authorizationService: AuthorizationService, resourceGlobalName: String, method: String): PartialServerEndpoint[String, (User, Option[String]), Unit, (StatusCode, ErrorResponse), Unit, Any, IO] =
     endpoint
       .securityIn(auth.bearer[String]())
       .errorOut(statusCode.and(jsonBody[ErrorResponse]))
-      .serverSecurityLogic(token => authorizationService.authLogic(token, Seq(resourceGlobalName)))
+      .serverSecurityLogic(token => authorizationService.authLogic(token, Seq(resourceGlobalName), method: String))
 
-  private def objectByPath(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, User, List[String], (StatusCode, ErrorResponse), ObjectUrl, Any, IO] =
-    securedGlobalEndpoint(authorizationService, resourceGlobalName)
+  private def objectByPath(authorizationService: AuthorizationService, resourceGlobalName: String, method: String): PartialServerEndpoint[String, (User, Option[String]), List[String], (StatusCode, ErrorResponse), ObjectUrl, Any, IO] =
+    securedGlobalEndpoint(authorizationService, resourceGlobalName, method)
       .get
       .description("Retrieve an object by its path and return an url to download it")
       .deprecated()
       .in(paths.description("Path of the object to retrieve"))
       .out(jsonBody[ObjectUrl])
 
-  private def objectsByPaths(authorizationService: AuthorizationService, resourceGlobalName: String): PartialServerEndpoint[String, User, String, (StatusCode, ErrorResponse), Map[String, String], Any, IO] =
-    securedGlobalEndpoint(authorizationService, resourceGlobalName)
+  private def objectsByPaths(authorizationService: AuthorizationService, resourceGlobalName: String, method: String): PartialServerEndpoint[String, (User, Option[String]), String, (StatusCode, ErrorResponse), Map[String, String], Any, IO] =
+    securedGlobalEndpoint(authorizationService, resourceGlobalName, method)
       .description("Retrieve a list of objects by their paths and return a list of download URLs for each object")
       .deprecated()
       .post
@@ -41,13 +41,13 @@ object LegacyObjectEndpoints:
         .example(Map("file1.vcf" -> "https://file1.vcf", "file2.vcf" -> "https://file2.vcf"))
       )
 
-  def objectByPathServer(authorizationService: AuthorizationService, s3Service: S3Service, resourceGlobalName: String, defaultBucket: String): ServerEndpoint[Any, IO] =
-    objectByPath(authorizationService, resourceGlobalName).serverLogicSuccess { user =>
+  def objectByPathServer(authorizationService: AuthorizationService, s3Service: S3Service, resourceGlobalName: String, defaultBucket: String, method: String): ServerEndpoint[Any, IO] =
+    objectByPath(authorizationService, resourceGlobalName, method).serverLogicSuccess { user =>
       file => s3Service.presignedUrl(defaultBucket, file.mkString("/")).pure[IO].map(ObjectUrl.apply)
     }
 
-  def listObjectsByPathServer(authorizationService: AuthorizationService, s3Service: S3Service, resourceGlobalName: String, defaultBucket: String): ServerEndpoint[Any, IO] =
-    objectsByPaths(authorizationService, resourceGlobalName).serverLogicSuccess { user =>
+  def listObjectsByPathServer(authorizationService: AuthorizationService, s3Service: S3Service, resourceGlobalName: String, defaultBucket: String, method: String): ServerEndpoint[Any, IO] =
+    objectsByPaths(authorizationService, resourceGlobalName, method).serverLogicSuccess { user =>
       files =>
         files.split("\n")
           .toList
@@ -59,8 +59,8 @@ object LegacyObjectEndpoints:
       b <- config.s3Config.defaultBucket
       r <- config.auth.resourcesGlobalName
       servers = List(
-        listObjectsByPathServer(authorizationService, s3Service, r, b),
-        objectByPathServer(authorizationService, s3Service, r, b)
+        listObjectsByPathServer(authorizationService, s3Service, r, b, config.ferloadClientConfig.method),
+        objectByPathServer(authorizationService, s3Service, r, b, config.ferloadClientConfig.method)
       )
     } yield servers
     s.getOrElse(Nil)
