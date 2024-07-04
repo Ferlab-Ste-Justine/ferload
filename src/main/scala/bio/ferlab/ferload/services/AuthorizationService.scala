@@ -1,6 +1,6 @@
 package bio.ferlab.ferload.services
 
-import bio.ferlab.ferload.AuthConfig
+import bio.ferlab.ferload.{AuthConfig, FerloadClientConfig}
 import bio.ferlab.ferload.endpoints.PermissionsEndpoints.InputPermissions
 import bio.ferlab.ferload.endpoints.RawPermissions
 import bio.ferlab.ferload.model.*
@@ -100,17 +100,20 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
    * @param resources the resources to access
    * @return the user with permissions if the token is valid and if user have access to the resources. Otherwise, return errors (Unauthorized, Forbidden, NotFound).
    */
-  def authLogic(token: String, resources: Seq[String], accessId: Option[String] = None): IO[Either[(StatusCode, ErrorResponse), (User, Option[String])]] = {
+  def authLogic(token: String, resources: Seq[String], method: String, accessId: Option[String] = None): IO[Either[(StatusCode, ErrorResponse), (User, Option[String])]] = {
     val r: IO[(User, Option[String])] = for {
       accessToken <- introspectToken(token)
       partyToken <- requestPartyToken(token, resources)
       permissionToken <- introspectToken(partyToken)
     } yield {
 
-      //Only request with token from the audience client is authorized
-      val isAuthorizedClientAccessToken = accessToken.azp.exists(_.equalsIgnoreCase(authConfig.audience.get))
-      if(!isAuthorizedClientAccessToken){
-        throw HttpError(s"Unauthorized client: ${accessToken.azp.getOrElse("Nothing")}", StatusCode.Forbidden)
+
+      // For device method we only authorize tokens from a specific client
+      if(method == FerloadClientConfig.DEVICE) {
+        val isAuthorizedClientAccessToken = accessToken.azp.exists(_.equalsIgnoreCase(authConfig.audience.get))
+        if (!isAuthorizedClientAccessToken) {
+          throw HttpError(s"Unauthorized client: ${accessToken.azp.getOrElse("Nothing")}", StatusCode.Forbidden)
+        }
       }
 
       val value: Set[Permissions] = permissionToken.authorization.map(_.permissions.toSet).getOrElse(Set.empty)

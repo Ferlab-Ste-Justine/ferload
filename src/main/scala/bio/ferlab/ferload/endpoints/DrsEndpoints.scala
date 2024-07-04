@@ -50,23 +50,23 @@ object DrsEndpoints:
       .errorOut(statusCode.and(jsonBody[ErrorResponse]))
       .out(jsonBody[Authorizations])
 
-  private def getObject(authorizationService: AuthorizationService) =
+  private def getObject(authorizationService: AuthorizationService, method: String) =
     objectEnpoint
       .securityIn(auth.bearer[String]())
       .securityIn(path[String].name("object_id"))
       .errorOut(statusCode.and(jsonBody[ErrorResponse]))
-      .serverSecurityLogic((token, objectId) => authorizationService.authLogic(token, Seq(objectId)))
+      .serverSecurityLogic((token, objectId) => authorizationService.authLogic(token, Seq(objectId), method))
       .get
       .out(jsonBody[DrsObject])
 
 
-  private def getAccessMethod(authorizationService: AuthorizationService) =
+  private def getAccessMethod(authorizationService: AuthorizationService, method: String) =
     objectEnpoint
       .securityIn(auth.bearer[String]())
       .securityIn(path[String].name("object_id"))
       .securityIn("access" / path[String].name("access_id"))
       .errorOut(statusCode.and(jsonBody[ErrorResponse]))
-      .serverSecurityLogic((token, objectId, accessId) => authorizationService.authLogic(token, Seq(objectId), Some(accessId)))
+      .serverSecurityLogic((token, objectId, accessId) => authorizationService.authLogic(token, Seq(objectId), method, Some(accessId)))
       .get
       .out(jsonBody[AccessURL])
 
@@ -89,7 +89,7 @@ object DrsEndpoints:
     }
   }
 
-  private def getObjectServer(config: Config, authorizationService: AuthorizationService, resourceService: ResourceService) = getObject(authorizationService).serverLogicSuccess { (user, _) =>
+  private def getObjectServer(config: Config, authorizationService: AuthorizationService, resourceService: ResourceService) = getObject(authorizationService, config.ferloadClientConfig.method).serverLogicSuccess { (user, _) =>
     _ =>
       for {
         resource <- resourceService.getResourceById(user.permissions.head.rsid)
@@ -98,7 +98,7 @@ object DrsEndpoints:
   }
 
 
-  private def getAccessMethodServer(config: Config, authorizationService: AuthorizationService, resourceService: ResourceService, s3Service: S3Service) = getAccessMethod(authorizationService).serverLogicSuccess { (user, accessId) =>
+  private def getAccessMethodServer(config: Config, authorizationService: AuthorizationService, resourceService: ResourceService, s3Service: S3Service) = getAccessMethod(authorizationService, config.ferloadClientConfig.method).serverLogicSuccess { (user, accessId) =>
     _ =>
       //fetch according to accessId, it is unique for now
       if(accessId.isEmpty || config.drsConfig.accessId != accessId.get){
