@@ -98,9 +98,13 @@ object DrsEndpoints:
   }
 
 
-  private def getAccessMethodServer(authorizationService: AuthorizationService, resourceService: ResourceService, s3Service: S3Service) = getAccessMethod(authorizationService).serverLogicSuccess { (user, accessId) =>
+  private def getAccessMethodServer(config: Config, authorizationService: AuthorizationService, resourceService: ResourceService, s3Service: S3Service) = getAccessMethod(authorizationService).serverLogicSuccess { (user, accessId) =>
     _ =>
       //fetch according to accessId, it is unique for now
+      if(accessId.isEmpty || config.drsConfig.accessId != accessId.get){
+        throw HttpError(s"Access Id not found: $accessId", StatusCode.NotFound)
+      }
+
       for {
         resource <- resourceService.getResourceById(user.permissions.head.rsid)
         bucketAndPath <- IO.fromTry(S3Service.parseS3Urls(resource.uris))
@@ -125,6 +129,6 @@ object DrsEndpoints:
     serviceServer(config.drsConfig),
     objectInfoServer(config, resourceService),
     getObjectServer(config, authorizationService, resourceService),
-    getAccessMethodServer(authorizationService, resourceService, s3Service),
+    getAccessMethodServer(config, authorizationService, resourceService, s3Service),
     createObjectServer(config, resourceService)
   )
