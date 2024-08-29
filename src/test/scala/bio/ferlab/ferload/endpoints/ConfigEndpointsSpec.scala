@@ -23,7 +23,8 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       HttpConfig("localhost", 9090),
       S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600),
       DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio", accessId = "accessId"),
-      FerloadClientConfig(FerloadClientConfig.PASSWORD, "ferloadClientId", None, None)
+      FerloadClientConfig(FerloadClientConfig.PASSWORD, "ferloadClientId", None, None),
+      None
     )
     val backendStub = TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
       .whenServerEndpointRunLogic(configServerEndpoint(config))
@@ -34,7 +35,7 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       .response(asJson[FerloadConfig])
       .send(backendStub)
 
-    val expected = FerloadConfig(FerloadClientConfig.PASSWORD, Some(KeycloakConfig("http://localhost:8080", "realm", "ferloadClientId", "clientId")), None, None)
+    val expected = FerloadConfig(FerloadClientConfig.PASSWORD, Some(KeycloakConfig("http://localhost:8080", "realm", "ferloadClientId", "clientId")), None, None, None)
     response.map(_.body.value shouldBe expected).unwrap
   }
 
@@ -45,7 +46,8 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       HttpConfig("localhost", 9090),
       S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600),
       DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio", accessId = "accessId"),
-      FerloadClientConfig(FerloadClientConfig.TOKEN, "ferloadClientId", Some("https://ferload.ferlab.bio/token"), Some("Please copy / paste this url in your browser to get a new authentication token."))
+      FerloadClientConfig(FerloadClientConfig.TOKEN, "ferloadClientId", Some("https://ferload.ferlab.bio/token"), Some("Please copy / paste this url in your browser to get a new authentication token.")),
+      None
     )
     val backendStub = TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
       .whenServerEndpointRunLogic(configServerEndpoint(config))
@@ -66,6 +68,7 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
         Some("Please copy / paste this url in your browser to get a new authentication token."),
         
       )),
+      None,
       None
     )
     response.map(_.body.value shouldBe expected).unwrap
@@ -78,7 +81,8 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       HttpConfig("localhost", 9090),
       S3Config(Some("accessKey"), Some("secretKey"), Some("endpoint"), Some("bucket"), false, Some("region"), 3600),
       DrsConfig("ferlaod", "Ferload", "ferload.ferlab.bio", "1.3.0", "Ferlab", "https://ferlab.bio", accessId = "accessId"),
-      FerloadClientConfig(FerloadClientConfig.DEVICE, "ferloadClientId", Some("https://ferload.ferlab.bio/token"), Some("Please copy / paste this url in your browser to get a new authentication token."))
+      FerloadClientConfig(FerloadClientConfig.DEVICE, "ferloadClientId", Some("https://ferload.ferlab.bio/token"), Some("Please copy / paste this url in your browser to get a new authentication token.")),
+      Some("http://localhost:4000")
     )
     val backendStub = TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
       .whenServerEndpointRunLogic(configServerEndpoint(config))
@@ -93,7 +97,8 @@ class ConfigEndpointsSpec extends AnyFlatSpec with Matchers with EitherValues:
       FerloadClientConfig.DEVICE,
       Some(KeycloakConfig("http://localhost:8080", "realm", "resource_client", "cqdg_acl")),
       None,
-      Some(ClientConfig(`manifest-file-pointer` = "File ID", `manifest-filename` = "File Name", `manifest-size` = "File Size"))
+      Some(ClientConfig(`manifest-file-pointer` = "File ID", `manifest-filename` = "File Name", `manifest-size` = "File Size")),
+      Some("http://localhost:4000")
     )
     response.map(_.body.value shouldBe expected).unwrap
   }
