@@ -2,7 +2,14 @@ package bio.ferlab.ferload
 
 import bio.ferlab.ferload.FerloadClientConfig.DEVICE
 
-case class Config(auth: AuthConfig, http: HttpConfig, s3Config: S3Config, drsConfig: DrsConfig, ferloadClientConfig: FerloadClientConfig)
+case class Config(
+                   auth: AuthConfig,
+                   http: HttpConfig,
+                   s3Config: S3Config,
+                   drsConfig: DrsConfig,
+                   ferloadClientConfig: FerloadClientConfig,
+                   reportApiManifestUrl: Option[String]
+                 )
 
 case class S3Config(
                      accessKey: Option[String],
@@ -136,7 +143,8 @@ object Config {
       HttpConfig.load(),
       S3Config.load(),
       DrsConfig.load(),
-      FerloadClientConfig.load()
+      FerloadClientConfig.load(),
+      sys.env.get("REPORT_API_MANIFEST_URL"),
     )
 
   }

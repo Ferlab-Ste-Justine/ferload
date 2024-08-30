@@ -84,6 +84,9 @@ HTTP Server information :
 - `HTTP_HOST` : Address HTTP server should listen to. Default 0.0.0.0 (all interfaces)
 - `HTTP_PORT`: Port HTTP server should listen to. Default 9090
 
+Report Api information :
+- `REPORT_API_MANIFEST_URL` : Report Api manifest download URL.
+
 Log configuration :
 - `LOG_LEVEL` : Log level. Default WARN.
 
