@@ -12,6 +12,13 @@ jobs:
           distribution: 'corretto'
           java-version: '17'
           cache: 'sbt'
+      - name: Install sbt
+        run: |
+          echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
+          echo "deb https://repo.scala-sbt.org/scalasbt/debian /" | sudo tee /etc/apt/sources.list.d/sbt_old.list
+          curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x99E82A75642AC823" | gpg --dearmor | sudo tee /usr/share/keyrings/sbt-keyring.gpg > /dev/null
+          sudo apt-get update
+          sudo apt-get install sbt
       - name: Run tests
         run: sbt test
       - name: Assembly
