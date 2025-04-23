@@ -2,7 +2,7 @@ package bio.ferlab.ferload.services
 
 import bio.ferlab.ferload.AuthConfig
 import bio.ferlab.ferload.unwrap
-import bio.ferlab.ferload.model.{Authorisation, ErrorResponse, IntrospectResponse, Permissions, User}
+import bio.ferlab.ferload.model.{Authorisation, ErrorResponse, IntrospectResponse, Permissions, SingleAudience, User}
 import cats.effect.IO
 import io.circe.Json
 import io.circe.parser.parse
@@ -74,9 +74,7 @@ class AuthorizationServiceSpec extends AnyFlatSpec with Matchers with EitherValu
 
     val authorizationService = new AuthorizationService(authConfig, testingBackend)
     val resp = authorizationService.introspectToken("E123456").unwrap
-    resp shouldBe IntrospectResponse(active = true, exp = Some(65), iat = Some(20), aud = Some("cqdg"), sub = None, azp = None, nbf = Some(4), authorization = Some(Authorisation(Seq(Permissions("F1", Some("F1 Name"), Seq("Scope1", "Scope2"))))))
-
-
+    resp shouldBe IntrospectResponse(active = true, exp = Some(65), iat = Some(20), aud = Some(SingleAudience("cqdg")), sub = None, azp = None, nbf = Some(4), authorization = Some(Authorisation(Seq(Permissions("F1", Some("F1 Name"), Seq("Scope1", "Scope2"))))))
   }
 
   "authLogic" should "return a User" in {
