@@ -85,12 +85,10 @@ class AuthorizationService(authConfig: AuthConfig, backend: SttpBackend[IO, Fs2S
         "client_secret" -> authConfig.clientSecret)
       .response(asJson[IntrospectResponse])
       .send(backend)
+
     introspect.flatMap(r => {
       IO.fromEither(r.body)
-    }
-
-      )
-
+    })
   }
 
   /**
